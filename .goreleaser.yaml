@@ -28,8 +28,8 @@ checksum:
 
 # Signs and notarizes the darwin binaries with Apple's notary service,
 # entirely on the Linux CI runner (goreleaser uses quill — no Mac needed).
-# Activates once the four MACOS_* secrets exist (see release.yml); until
-# then it is skipped and macOS users need brew's --no-quarantine flag.
+# Skipped entirely if the MACOS_* secrets are absent (a fork's CI, say) —
+# the release still succeeds, it just ships binaries Gatekeeper will block.
 #   MACOS_SIGN_P12         base64 of the Developer ID Application .p12
 #   MACOS_SIGN_PASSWORD    the .p12 export password
 #   MACOS_NOTARY_ISSUER_ID App Store Connect API key issuer UUID
@@ -89,12 +89,6 @@ homebrew_casks:
     binaries:
       - smartly
     caveats: |
-      smartly's binaries are not yet signed with an Apple Developer ID. If
-      you installed without --no-quarantine, macOS Gatekeeper will block the
-      binary — do NOT click "Move to Trash"; instead run:
-
-        xattr -d com.apple.quarantine "$(brew --prefix)/Caskroom/smartly/"*/smartly
-
       Run `smartly config init` to write a default config, and
       `eval "$(smartly init bash)"` (or `init zsh`) in your shell rc file
       to enable commands that change directory or set environment variables.
