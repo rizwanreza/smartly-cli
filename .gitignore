@@ -3,3 +3,4 @@
 /smartly-cli
 .DS_Store
 /tmp/
+/.claude/worktrees/
