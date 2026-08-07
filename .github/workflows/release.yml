@@ -35,7 +35,13 @@ jobs:
           args: release --clean ${{ steps.notes.outputs.flag }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Optional: a fine-grained PAT with contents:write on
-          # rizwanreza/homebrew-tap. When absent, the cask is generated but
-          # not pushed to the tap (see skip_upload in .goreleaser.yaml).
-          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          # SSH deploy key with write access to rizwanreza/homebrew-tap;
+          # publishes the cask. Absent -> cask generated but not pushed.
+          HOMEBREW_TAP_DEPLOY_KEY: ${{ secrets.HOMEBREW_TAP_DEPLOY_KEY }}
+          # Apple signing + notarization (see notarize in .goreleaser.yaml);
+          # all absent -> darwin binaries ship unsigned, release still works.
+          MACOS_SIGN_P12: ${{ secrets.MACOS_SIGN_P12 }}
+          MACOS_SIGN_PASSWORD: ${{ secrets.MACOS_SIGN_PASSWORD }}
+          MACOS_NOTARY_ISSUER_ID: ${{ secrets.MACOS_NOTARY_ISSUER_ID }}
+          MACOS_NOTARY_KEY_ID: ${{ secrets.MACOS_NOTARY_KEY_ID }}
+          MACOS_NOTARY_KEY: ${{ secrets.MACOS_NOTARY_KEY }}

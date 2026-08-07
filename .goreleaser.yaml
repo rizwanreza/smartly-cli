@@ -26,6 +26,28 @@ archives:
 checksum:
   name_template: "checksums.txt"
 
+# Signs and notarizes the darwin binaries with Apple's notary service,
+# entirely on the Linux CI runner (goreleaser uses quill — no Mac needed).
+# Activates once the four MACOS_* secrets exist (see release.yml); until
+# then it is skipped and macOS users need brew's --no-quarantine flag.
+#   MACOS_SIGN_P12         base64 of the Developer ID Application .p12
+#   MACOS_SIGN_PASSWORD    the .p12 export password
+#   MACOS_NOTARY_ISSUER_ID App Store Connect API key issuer UUID
+#   MACOS_NOTARY_KEY_ID    App Store Connect API key ID
+#   MACOS_NOTARY_KEY       base64 of the App Store Connect .p8 key
+notarize:
+  macos:
+    - enabled: '{{ if envOrDefault "MACOS_SIGN_P12" "" }}true{{ else }}false{{ end }}'
+      ids: [smartly]
+      sign:
+        certificate: "{{ envOrDefault \"MACOS_SIGN_P12\" \"\" }}"
+        password: "{{ envOrDefault \"MACOS_SIGN_PASSWORD\" \"\" }}"
+      notarize:
+        issuer_id: "{{ envOrDefault \"MACOS_NOTARY_ISSUER_ID\" \"\" }}"
+        key_id: "{{ envOrDefault \"MACOS_NOTARY_KEY_ID\" \"\" }}"
+        key: "{{ envOrDefault \"MACOS_NOTARY_KEY\" \"\" }}"
+        wait: true
+
 changelog:
   sort: asc
   groups:
@@ -46,18 +68,20 @@ changelog:
       - "^chore\\(deps\\)"
       - "^Merge "
 
-# Publishing the cask needs write access to the tap repo, which the release
-# workflow's default GITHUB_TOKEN does not have. Until a HOMEBREW_TAP_TOKEN
-# secret exists (a fine-grained PAT with contents:write on
-# rizwanreza/homebrew-tap), the cask file is still generated into dist/ but
-# not pushed — the release itself succeeds either way.
+# The cask is pushed to the tap over SSH using a write-scoped deploy key
+# (repo secret HOMEBREW_TAP_DEPLOY_KEY) — deliberately not a PAT, since a
+# deploy key grants write to exactly one repository and nothing else. If
+# the secret is ever absent the cask is still generated into dist/ but not
+# pushed, and the release itself succeeds.
 homebrew_casks:
   - name: smartly
-    skip_upload: '{{ if envOrDefault "HOMEBREW_TAP_TOKEN" "" }}false{{ else }}true{{ end }}'
+    skip_upload: '{{ if envOrDefault "HOMEBREW_TAP_DEPLOY_KEY" "" }}false{{ else }}true{{ end }}'
     repository:
       owner: rizwanreza
       name: homebrew-tap
-      token: '{{ envOrDefault "HOMEBREW_TAP_TOKEN" "" }}'
+      git:
+        url: git@github.com:rizwanreza/homebrew-tap.git
+        private_key: '{{ envOrDefault "HOMEBREW_TAP_DEPLOY_KEY" "" }}'
     directory: Casks
     homepage: "https://github.com/rizwanreza/smartly-cli"
     description: "Turn an English sentence into an executable shell command"
