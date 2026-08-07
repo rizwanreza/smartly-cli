@@ -28,10 +28,23 @@ checksum:
 
 changelog:
   sort: asc
+  groups:
+    - title: Features
+      regexp: '^feat'
+      order: 0
+    - title: Fixes
+      regexp: '^fix'
+      order: 1
+    - title: Documentation and site
+      regexp: '^(docs|site)'
+      order: 2
+    - title: Everything else
+      order: 999
   filters:
     exclude:
-      - "^docs:"
       - "^test:"
+      - "^chore\\(deps\\)"
+      - "^Merge "
 
 # Publishing the cask needs write access to the tap repo, which the release
 # workflow's default GITHUB_TOKEN does not have. Until a HOMEBREW_TAP_TOKEN
@@ -56,7 +69,29 @@ homebrew_casks:
       `eval "$(smartly init bash)"` (or `init zsh`) in your shell rc file
       to enable commands that change directory or set environment variables.
 
+# Every release page opens like an announcement: what this is, how to
+# install it, where the docs are — then the grouped changelog, then a
+# compare link. A hand-written announcement in docs/releases/<tag>.md
+# replaces the changelog section entirely (see release.yml).
 release:
   github:
     owner: rizwanreza
     name: smartly-cli
+  header: |
+    Tell your shell what you mean. smartly {{ .Version }} turns a plain
+    English sentence into one executable shell command.
+
+    **Install**
+
+    ```
+    go install github.com/rizwanreza/smartly-cli/cmd/smartly@{{ .Tag }}
+    ```
+
+    Or download a binary below (macOS and Linux, amd64 and arm64 — verify
+    with `checksums.txt`).
+
+    Docs: https://rizwanreza.github.io/smartly-cli/
+  footer: |
+    ---
+
+    **Full diff**: https://github.com/rizwanreza/smartly-cli/compare/{{ .PreviousTag }}...{{ .Tag }}

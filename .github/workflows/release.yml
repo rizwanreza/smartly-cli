@@ -18,11 +18,21 @@ jobs:
         with:
           go-version-file: go.mod
       - run: go test ./... -count=1
+      # A hand-written announcement at docs/releases/<tag>.md replaces the
+      # auto-generated changelog for that release. The header/footer from
+      # .goreleaser.yaml (install block, docs link, compare link) still wrap
+      # it either way.
+      - name: Use hand-written release notes when present
+        id: notes
+        run: |
+          if [ -f "docs/releases/${GITHUB_REF_NAME}.md" ]; then
+            echo "flag=--release-notes=docs/releases/${GITHUB_REF_NAME}.md" >> "$GITHUB_OUTPUT"
+          fi
       - uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser
           version: "~> v2"
-          args: release --clean
+          args: release --clean ${{ steps.notes.outputs.flag }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Optional: a fine-grained PAT with contents:write on
