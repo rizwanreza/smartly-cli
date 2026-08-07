@@ -83,7 +83,7 @@ homebrew_casks:
         url: git@github.com:rizwanreza/homebrew-tap.git
         private_key: '{{ envOrDefault "HOMEBREW_TAP_DEPLOY_KEY" "" }}'
     directory: Casks
-    homepage: "https://github.com/rizwanreza/smartly-cli"
+    homepage: "https://smartlycli.com/"
     description: "Turn an English sentence into an executable shell command"
     license: "MIT"
     binaries:

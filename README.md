@@ -6,6 +6,12 @@
   <strong>Tell your shell what you mean.</strong>
 </p>
 
+<p align="center">
+  <a href="https://smartlycli.com/">smartlycli.com</a> ·
+  <a href="https://smartlycli.com/docs/getting-started/">Getting started</a> ·
+  <a href="https://smartlycli.com/docs/execution-and-safety/">Execution and safety</a>
+</p>
+
 ---
 
 `smartly` turns a plain English sentence into a single shell command and, by
