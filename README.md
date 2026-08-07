@@ -24,13 +24,13 @@ only when the generated command looks like it changes something.
 ## Install
 
 ```
-go install github.com/rizwanreza/smartly-cli/cmd/smartly@latest
-```
-
-Or with Homebrew:
-
-```
 brew install rizwanreza/tap/smartly
+```
+
+Or with Go, if you'd rather build it yourself:
+
+```
+go install github.com/rizwanreza/smartly-cli/cmd/smartly@latest
 ```
 
 The macOS binaries are signed with an Apple Developer ID and notarized, so
