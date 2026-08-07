@@ -39,7 +39,22 @@ export PATH="$PATH:$(go env GOPATH)/bin"   # add to ~/.bashrc
   </Fragment>
 </Platform>
 
-A Homebrew tap is planned once the project is stable enough to tag a release.
+Or install with Homebrew:
+
+```bash
+brew install --no-quarantine rizwanreza/tap/smartly
+```
+
+<Callout type="warn" title="The --no-quarantine flag matters on macOS.">
+  The release binaries aren't signed with an Apple Developer ID yet, so
+  without the flag Gatekeeper blocks the installed binary with a "cannot be
+  opened" dialog. If that already happened, don't click "Move to Trash" —
+  run `xattr -d com.apple.quarantine "$(brew --prefix)/Caskroom/smartly/"*/smartly`
+  and it will work.
+</Callout>
+
+Prebuilt binaries for macOS and Linux are also on the
+[releases page](https://github.com/rizwanreza/smartly-cli/releases).
 
 ## Set your API key
 

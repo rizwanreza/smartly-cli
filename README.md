@@ -27,8 +27,18 @@ only when the generated command looks like it changes something.
 go install github.com/rizwanreza/smartly-cli/cmd/smartly@latest
 ```
 
-(A Homebrew tap is planned once this is stable enough to tag a release — see
-`.goreleaser.yaml`.)
+Or with Homebrew:
+
+```
+brew install --no-quarantine rizwanreza/tap/smartly
+```
+
+`--no-quarantine` matters: the release binaries aren't signed with an Apple
+Developer ID yet, so without it macOS Gatekeeper blocks the binary with a
+"cannot be opened" dialog. If you already installed without the flag, run
+`xattr -d com.apple.quarantine "$(brew --prefix)/Caskroom/smartly/"*/smartly`
+instead of clicking "Move to Trash". Binaries are also on the
+[releases page](https://github.com/rizwanreza/smartly-cli/releases).
 
 Out of the box smartly uses `provider: anthropic`, so it needs only
 `ANTHROPIC_API_KEY` set in your environment. No config file is required.
