@@ -28,10 +28,10 @@ Usage:
   smartly config init|show|path
 
 Examples:
-  smartly remove all worktrees except main
-  smartly find every TODO in this repo and count them by file
-  smartly --confirm delete the node_modules directories under ./packages
-  smartly --dry-run compress the logs directory into a tarball
+  smartly show hidden files sorted by size
+  smartly what changed in this repo in the last week
+  smartly --confirm kill whatever is listening on port 3000
+  smartly --dry-run delete all my branches that are already merged into main
 
 Execution:
       --confirm          ask before running the generated command

@@ -54,11 +54,20 @@ smartly <your request in plain English>
 ```
 
 ```
-$ smartly find all occurrences of git and replace with svn
-→ find . -type f -exec sed -i '' 's/git/svn/g' {} +
+$ smartly show hidden files sorted by size
+→ ls -lahS
 
-$ smartly tail logs from development.log
-→ tail -f development.log
+$ smartly what changed in this repo in the last week
+→ git log --oneline --since='1 week ago'
+
+$ smartly kill whatever is listening on port 3000
+→ kill $(lsof -ti :3000)
+
+$ smartly delete all my branches that are already merged into main
+→ git branch --merged main | grep -vE '^\*| main$' | xargs git branch -d
+
+$ smartly replace api.example.com with api.internal in every yaml file
+→ find . -name '*.y*ml' -exec sed -i '' 's/api\.example\.com/api.internal/g' {} +
 ```
 
 smartly sends your sentence — plus, optionally, a bit of context about your
