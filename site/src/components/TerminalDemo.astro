@@ -1,26 +1,38 @@
 ---
 /**
  * The landing page's signature moment: a plain-English request resolving into
- * one shell command. Every example is taken verbatim from the README.
+ * one shell command. The examples climb from trivial to power move, so the
+ * rotation itself tells the product story: flag amnesia, then composition,
+ * then safety, then context, then portability.
  *
  * Motion is deliberately one transition — the command arrives whole, the way it
  * does in the terminal. No character-by-character typing.
  */
 const examples = [
   {
-    request: 'find all occurrences of git and replace with svn',
-    command: "find . -type f -exec sed -i '' 's/git/svn/g' {} +",
-    note: 'BSD sed on macOS. On Linux the same request generates sed -i.',
+    request: 'show hidden files sorted by size',
+    command: 'ls -lahS',
+    note: 'The flags you always have to look up. Simple requests stay simple.',
   },
   {
-    request: 'remove all worktrees except main',
-    command: 'git worktree remove /Users/you/project-fix',
-    note: 'Resolved against the worktrees that actually exist here.',
-  },
-  {
-    request: 'tail logs from development.log',
-    command: 'tail -f development.log',
+    request: 'what changed in this repo in the last week',
+    command: "git log --oneline --since='1 week ago'",
     note: 'One command line. Never a multi-step script.',
+  },
+  {
+    request: 'kill whatever is listening on port 3000',
+    command: 'kill $(lsof -ti :3000)',
+    note: 'Under confirm-destructive, this one stops and asks first.',
+  },
+  {
+    request: 'delete all my branches that are already merged into main',
+    command: "git branch --merged main | grep -vE '^\\*| main$' | xargs git branch -d",
+    note: 'Resolved against the branches that actually exist here.',
+  },
+  {
+    request: 'replace api.example.com with api.internal in every yaml file',
+    command: "find . -name '*.y*ml' -exec sed -i '' 's/api\\.example\\.com/api.internal/g' {} +",
+    note: 'BSD sed on macOS. On Linux the same request generates sed -i.',
   },
 ];
 
