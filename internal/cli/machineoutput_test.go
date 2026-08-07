@@ -56,7 +56,7 @@ func assertPlain(t *testing.T, label, s string) {
 func TestShellIntegrationOutputIsExactlyTheScript(t *testing.T) {
 	for _, shell := range []string{"bash", "zsh"} {
 		t.Run(shell, func(t *testing.T) {
-			want, err := shellinit.Render(shell)
+			want, err := shellinit.Render(shell, rootSubcommandNames())
 			if err != nil {
 				t.Fatalf("shellinit.Render(%q) error = %v", shell, err)
 			}

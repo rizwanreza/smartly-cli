@@ -50,11 +50,12 @@ providers:
     api_key: ""              # fallback only, used if the env var is unset
     base_url: ""              # optional: self-hosted/proxy endpoint
 
+  # also drives any OpenAI-compatible API — see Providers
   openai:
     model: ""                 # required if provider: openai — no default shipped
     api_key_env: OPENAI_API_KEY
     api_key: ""
-    base_url: ""              # optional: Azure OpenAI, vLLM, LM Studio, etc.
+    base_url: ""              # e.g. https://api.fireworks.ai/inference/v1
 
   claude-cli:
     model: haiku               # required — see CLI-based authentication

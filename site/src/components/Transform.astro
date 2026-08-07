@@ -2,19 +2,26 @@
 /**
  * The site's signature device: one plain-English request, one shell command.
  * `›` marks what you typed, `→` marks what smartly generated.
+ *
+ * The input row shows the whole invocation, binary and all, so it reads as
+ * something you could paste rather than a floating sentence. `invocation`
+ * overrides the binary for the pages that are demonstrating a flag.
  */
 interface Props {
   request: string;
   command: string;
+  invocation?: string;
 }
 
-const { request, command } = Astro.props;
+const { request, command, invocation = 'smartly' } = Astro.props;
 ---
 
 <figure class="transform" data-copyable>
   <div class="transform__row transform__row--in">
     <span class="transform__glyph" aria-hidden="true">›</span>
-    <span class="transform__text">{request}</span>
+    <span class="transform__text"
+      ><span class="transform__bin">{invocation}</span> {request}</span
+    >
   </div>
   <div class="transform__row transform__row--out">
     <span class="transform__glyph transform__glyph--out" aria-hidden="true">→</span>
@@ -65,6 +72,12 @@ const { request, command } = Astro.props;
 
   .transform__text {
     overflow-wrap: anywhere;
+  }
+
+  /* The binary name sits a shade darker than the request it carries, so the
+     line still reads request-first. Weight, not colour, does the work. */
+  .transform__bin {
+    color: var(--ink);
   }
 
   .transform__row--out :global(pre) {

@@ -1,8 +1,30 @@
 smartly() {
-  local __smartly_id="smartly-$$-$RANDOM$RANDOM"
-  local __smartly_out
+  local __smartly_arg __smartly_id __smartly_out __smartly_rc __smartly_exit
+
+  # Only a generated command may be eval'd. Everything else smartly prints —
+  # help, the version, `config show`, `onboard` — is prose for you to read, and
+  # eval-ing it produces a shell parse error at best and runs something
+  # unintended at worst. Those invocations go straight to the binary.
+  case "$1" in
+    ""|{{.SubcommandPattern}}|-h|--help|--version)
+      command smartly "$@"
+      return $?
+      ;;
+  esac
+
+  # --help can also trail a request-shaped invocation, e.g. `smartly foo --help`.
+  for __smartly_arg in "$@"; do
+    case "$__smartly_arg" in
+      -h|--help|--version)
+        command smartly "$@"
+        return $?
+        ;;
+    esac
+  done
+
+  __smartly_id="smartly-$$-$RANDOM$RANDOM"
   __smartly_out="$(SMARTLY_REQUEST_ID="$__smartly_id" command smartly --print-only "$@")"
-  local __smartly_rc=$?
+  __smartly_rc=$?
   if [ $__smartly_rc -ne 0 ]; then
     return $__smartly_rc
   fi
@@ -10,7 +32,7 @@ smartly() {
     return 0
   fi
   eval "$__smartly_out"
-  local __smartly_exit=$?
+  __smartly_exit=$?
   SMARTLY_REQUEST_ID="$__smartly_id" command smartly --record-exit "$__smartly_exit" >/dev/null 2>&1
   return $__smartly_exit
 }

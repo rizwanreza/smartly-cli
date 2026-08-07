@@ -6,6 +6,12 @@
   <strong>Tell your shell what you mean.</strong>
 </p>
 
+<p align="center">
+  <a href="https://smartlycli.com/">smartlycli.com</a> ·
+  <a href="https://smartlycli.com/docs/getting-started/">Getting started</a> ·
+  <a href="https://smartlycli.com/docs/execution-and-safety/">Execution and safety</a>
+</p>
+
 ---
 
 `smartly` turns a plain English sentence into a single shell command and, by
@@ -24,13 +30,13 @@ only when the generated command looks like it changes something.
 ## Install
 
 ```
-go install github.com/rizwanreza/smartly-cli/cmd/smartly@latest
-```
-
-Or with Homebrew:
-
-```
 brew install rizwanreza/tap/smartly
+```
+
+Or with Go, if you'd rather build it yourself:
+
+```
+go install github.com/rizwanreza/smartly-cli/cmd/smartly@latest
 ```
 
 The macOS binaries are signed with an Apple Developer ID and notarized, so
@@ -171,11 +177,12 @@ providers:
     api_key: ""              # fallback only, used if the env var is unset
     base_url: ""              # optional: self-hosted/proxy endpoint
 
+  # also drives any OpenAI-compatible API — see "OpenAI-compatible endpoints"
   openai:
     model: ""                 # required if provider: openai — no default shipped
     api_key_env: OPENAI_API_KEY
     api_key: ""
-    base_url: ""              # optional: Azure OpenAI, vLLM, LM Studio, etc.
+    base_url: ""              # e.g. https://api.fireworks.ai/inference/v1
 
   claude-cli:
     model: haiku               # required — see CLI-based authentication below
@@ -222,6 +229,44 @@ end. What it will and won't do:
 If you pick `confirm-destructive`, it offers to run the classifier over a
 few example commands in front of you, so you can see what it does and does
 not catch before you rely on it.
+
+### OpenAI-compatible endpoints (Fireworks, Together, vLLM…)
+
+The `openai` provider is not limited to OpenAI. It speaks the Chat
+Completions API, which most inference vendors implement, so `base_url` is
+enough to point it at Fireworks, Together, Groq, DeepInfra, OpenRouter,
+Azure OpenAI, or a local vLLM / Ollama / LM Studio server.
+
+```yaml
+provider: openai
+
+providers:
+  openai:
+    model: accounts/fireworks/models/llama-v3p1-70b-instruct
+    api_key_env: FIREWORKS_API_KEY
+    base_url: https://api.fireworks.ai/inference/v1
+```
+
+```
+export FIREWORKS_API_KEY="fw-..."
+```
+
+Three things worth knowing:
+
+- **`api_key_env` means you don't have to overload `OPENAI_API_KEY`.** It
+  names the variable smartly reads, so a real OpenAI key can stay where it
+  is and you switch vendors by editing one config line.
+- **`model` is that vendor's model id**, passed through verbatim — exactly
+  as their own docs write it, not an OpenAI name.
+- **`base_url` is the API root including the version segment.** smartly
+  appends `/chat/completions` itself; a trailing slash makes no difference.
+
+Command quality tracks the model. Smaller open-weight models more often
+reply with prose or a code fence, which smartly rejects outright rather
+than trying to salvage — see [Output](#output).
+
+Note that a `base_url` sends your prompt, and with `context: light` (the
+default) your directory listing and git status, to whatever you point it at.
 
 ### CLI-based authentication (claude-cli / codex-cli)
 

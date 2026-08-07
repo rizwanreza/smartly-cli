@@ -97,15 +97,17 @@ function initValueCopy(): void {
 
 /* ------------------------------------------------------------------ tabs */
 
-const TAB_STORAGE_KEY = 'smartly:platform';
+// Every [data-tabs="x"] group on the page shares one choice, remembered under
+// its own key — so picking macOS once applies to every platform block, and
+// picking Homebrew once applies to every install block, independently.
+const tabStorageKey = (name: string) => `smartly:${name}`;
 
 function initTabs(): void {
   const groups = document.querySelectorAll<HTMLElement>('[data-tabs]');
   if (!groups.length) return;
 
-  const stored = safeRead(TAB_STORAGE_KEY);
-
   groups.forEach((group) => {
+    const stored = safeRead(tabStorageKey(group.dataset.tabs!));
     const tabs = Array.from(
       group.querySelectorAll<HTMLButtonElement>('[role="tab"]'),
     );
@@ -129,12 +131,12 @@ function initTabs(): void {
   });
 
   function select(origin: HTMLElement, key: string, persist: boolean): void {
-    // Platform choice is a whole-page preference: switching one group switches
-    // every group so a reader never has to re-pick per code block.
-    const shared = origin.dataset.tabs === 'platform';
-    const targets = shared
-      ? document.querySelectorAll<HTMLElement>('[data-tabs="platform"]')
-      : [origin];
+    // The choice is a whole-page preference: switching one group switches
+    // every group of the same kind, so a reader never re-picks per block.
+    const name = origin.dataset.tabs!;
+    const targets = document.querySelectorAll<HTMLElement>(
+      `[data-tabs="${name}"]`,
+    );
 
     targets.forEach((group) => {
       group
@@ -151,7 +153,7 @@ function initTabs(): void {
         });
     });
 
-    if (persist && shared) safeWrite(TAB_STORAGE_KEY, key);
+    if (persist) safeWrite(tabStorageKey(name), key);
   }
 }
 

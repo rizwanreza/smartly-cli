@@ -1,27 +1,130 @@
 ---
+/**
+ * The install command, with Homebrew leading and `go install` one click away.
+ * Brew is first because it needs no Go toolchain and the macOS binaries are
+ * signed and notarized, so it is the shortest path for most readers.
+ *
+ * Works without JavaScript: both panels render, the Homebrew one visible.
+ * The choice is shared across every install block on the page (see initTabs).
+ */
 interface Props {
-  command?: string;
   /** `size="lg"` is the hero treatment. */
   size?: 'md' | 'lg';
 }
 
-const {
-  command = 'go install github.com/rizwanreza/smartly-cli/cmd/smartly@latest',
-  size = 'md',
-} = Astro.props;
+const { size = 'md' } = Astro.props;
+
+const id = `install-${Math.random().toString(36).slice(2, 9)}`;
+
+const methods = [
+  {
+    key: 'brew',
+    label: 'Homebrew',
+    command: 'brew install rizwanreza/tap/smartly',
+  },
+  {
+    key: 'go',
+    label: 'Go',
+    command: 'go install github.com/rizwanreza/smartly-cli/cmd/smartly@latest',
+  },
+] as const;
 ---
 
-<div class:list={['install', `install--${size}`]}>
-  <code class="install__cmd"
-    ><span class="install__prompt" aria-hidden="true">$</span>{command}</code
-  >
-  <button type="button" class="install__copy" data-install-copy data-command={command}>
-    <span data-install-label>Copy</span>
-    <span class="sr-only">install command</span>
-  </button>
+<div class:list={['install-group', `install-group--${size}`]} data-tabs="install">
+  <div class="install-group__tabs" role="tablist" aria-label="Install method">
+    {
+      methods.map((method, i) => (
+        <button
+          type="button"
+          role="tab"
+          id={`${id}-tab-${method.key}`}
+          data-key={method.key}
+          aria-selected={i === 0 ? 'true' : 'false'}
+          aria-controls={`${id}-panel-${method.key}`}
+          tabindex={i === 0 ? 0 : -1}
+        >
+          {method.label}
+        </button>
+      ))
+    }
+  </div>
+
+  {
+    methods.map((method, i) => (
+      <div
+        role="tabpanel"
+        id={`${id}-panel-${method.key}`}
+        data-key={method.key}
+        aria-labelledby={`${id}-tab-${method.key}`}
+        tabindex={0}
+        hidden={i !== 0}
+      >
+        <div class:list={['install', `install--${size}`]}>
+          <code class="install__cmd">
+            <span class="install__prompt" aria-hidden="true">
+              $
+            </span>
+            {method.command}
+          </code>
+          <button
+            type="button"
+            class="install__copy"
+            data-install-copy
+            data-command={method.command}
+          >
+            <span data-install-label>Copy</span>
+            <span class="sr-only">install command</span>
+          </button>
+        </div>
+      </div>
+    ))
+  }
 </div>
 
 <style>
+  .install-group__tabs {
+    display: flex;
+    gap: 0.15rem;
+  }
+
+  .install-group__tabs button {
+    position: relative;
+    background: none;
+    border: 0;
+    padding: 0.4rem 0.8rem;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    cursor: pointer;
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
+
+  .install-group__tabs button:hover {
+    color: var(--ink);
+    background: var(--paper);
+  }
+
+  .install-group__tabs button[aria-selected='true'] {
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  .install-group__tabs button[aria-selected='true']::after {
+    content: '';
+    position: absolute;
+    left: 0.8rem;
+    right: 0.8rem;
+    bottom: 0;
+    height: 2px;
+    background: var(--cyan);
+  }
+
+  .install-group [role='tabpanel']:focus-visible {
+    outline-offset: 4px;
+  }
+
   .install {
     display: flex;
     align-items: stretch;
