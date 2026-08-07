@@ -193,6 +193,26 @@ func expandHome(path string) string {
 	return path
 }
 
+// ContractHome is the inverse of expandHome: it rewrites a path under the
+// user's home directory back to the "~/..." shorthand. Config files are
+// written for humans to read and edit, so a generated config.yaml should
+// say "~/.config/smartly/history.log" rather than baking in an absolute
+// path that stops being right if the file is copied to another machine.
+// Paths outside the home directory are returned unchanged.
+func ContractHome(p string) string {
+	home, err := os.UserHomeDir()
+	if err != nil || home == "" {
+		return p
+	}
+	if p == home {
+		return "~"
+	}
+	if strings.HasPrefix(p, home+string(filepath.Separator)) {
+		return "~" + p[len(home):]
+	}
+	return p
+}
+
 // ResolveAPIKey implements the locked precedence for API keys: the env var
 // named by apiKeyEnv (if set in config) wins, then the provider's hardcoded
 // default env var, then the config file's plaintext fallback value.

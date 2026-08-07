@@ -41,7 +41,7 @@ var configInitCmd = &cobra.Command{
 		if err := os.MkdirAll(config.Dir(), 0o700); err != nil {
 			return fmt.Errorf("creating config directory: %w", err)
 		}
-		if err := os.WriteFile(path, []byte(defaultConfigTemplate), 0o600); err != nil {
+		if err := os.WriteFile(path, []byte(renderConfigTemplate(config.Defaults())), 0o600); err != nil {
 			return fmt.Errorf("writing config file: %w", err)
 		}
 
@@ -118,61 +118,3 @@ func emptyOr(s, fallback string) string {
 	}
 	return s
 }
-
-const defaultConfigTemplate = `# smartly configuration
-# See: smartly config path
-
-# Which LLM backend to use: anthropic | openai | claude-cli | codex-cli
-provider: anthropic
-
-execution:
-  # auto: run the generated command immediately, no confirmation.
-  # confirm: ask [y/N] before running everything.
-  # confirm-destructive: ask only when a local static classifier thinks the
-  #   command mutates something — or doesn't recognize it at all. Best
-  #   effort, not a sandbox: it can miss things.
-  # Confirmation reads from /dev/tty and fails closed with no controlling
-  # terminal (CI, cron) — use -y there. --confirm always asks and -y never
-  # asks, whatever this says.
-  mode: auto
-
-# How much environment context to send to the LLM: none | light | full
-#   light: cwd listing + git branch/status/worktrees.
-#   full:  light + a tail of your shell history.
-# full is NEVER the default: your shell history may contain secrets typed
-# inline, and enabling it sends that history to a third-party API. Only
-# turn this on if you've accepted that tradeoff.
-context: light
-
-log:
-  # Append-only JSONL audit trail of every request and generated command.
-  # This file stores raw sentences and commands verbatim, which may include
-  # sensitive text you typed — it is created with 0600 permissions, but it
-  # is not encrypted.
-  path: ~/.config/smartly/history.log
-
-providers:
-  anthropic:
-    model: claude-opus-5
-    api_key_env: ANTHROPIC_API_KEY
-    api_key: ""   # fallback only, used if the env var above is unset
-    base_url: ""  # optional: self-hosted/proxy Anthropic-compatible endpoint
-
-  openai:
-    model: ""     # required if provider is openai; smartly ships no default
-    api_key_env: OPENAI_API_KEY
-    api_key: ""
-    base_url: ""  # optional: Azure OpenAI, vLLM, LM Studio, etc.
-
-  # claude-cli / codex-cli shell out to your own logged-in claude/codex CLI
-  # session instead of an API key — no api_key field exists for either.
-  # See the README's "CLI-based authentication" section before using these.
-  claude-cli:
-    model: haiku        # required: an explicit --model avoids ambiguous internal routing
-    binary: claude       # executable name/path, looked up via PATH
-    max_budget_usd: 0.50  # per-request cost ceiling passed to claude --max-budget-usd
-
-  codex-cli:
-    model: ""    # optional; omitted if unset, letting codex use its own default
-    binary: codex  # executable name/path, looked up via PATH
-`
