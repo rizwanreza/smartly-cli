@@ -23,6 +23,7 @@ import (
 const helpBody = `
 Usage:
   smartly <request>
+  smartly onboard
   smartly init bash|zsh
   smartly config init|show|path
 
@@ -51,6 +52,7 @@ Other:
       --record-exit int  internal: used by the ` + "`smartly init` shell function" + `
 
 Configuration:
+  smartly onboard        walk through the settings interactively
   smartly config path    where your config.yaml lives
   smartly config init    write a default one
 

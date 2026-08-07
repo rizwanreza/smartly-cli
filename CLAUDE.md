@@ -13,6 +13,7 @@ go build ./...                         # build everything
 go vet ./...                           # static checks — run before considering work done
 go test ./...                          # full test suite (all packages are pure unit tests, no live API/subprocess calls)
 go test ./internal/provider/... -run TestBuildClaudeArgs -v   # single test
+go test ./internal/classify/ -run FuzzClassify -fuzz FuzzClassify -fuzztime 30s   # classifier totality fuzz
 go install ./cmd/smartly               # install locally as `smartly` (see "Binary name" below for why this path matters)
 goreleaser check                       # validate .goreleaser.yaml
 goreleaser release --snapshot --clean --skip=publish   # local cross-compile dry run, writes to dist/
@@ -45,6 +46,40 @@ Anthropic's provider sets `thinking: {type: "disabled"}` **explicitly**, not by 
 - The confirmation gate reads/writes `/dev/tty` directly, never stdin/stdout — stdin may already be consumed by a command-substitution capture in the shell wrapper (see below), and it fails closed (refuses to run) if no controlling terminal is available.
 - `execution.mode: auto` (run immediately, no prompt) is the default and is intentional product behavior, not a missing safety check — see README's "Auto-run is the default" callout before adding friction here.
 
+### Destructive-command classifier (`internal/classify`)
+
+Backs `execution.mode: confirm-destructive`. `Classify(command string) Result` is a **pure function of the string** — no `os.Stat`, no `exec.LookPath`, no subprocess, no second LLM call. That's what keeps it TOCTOU-free and testable under the no-subprocess-in-tests rule; don't "improve" it by having it check whether a path exists.
+
+Tri-state: `Safe` / `Destructive` / `Unknown`, ordered so a command's risk is the max over its segments. **`Unknown` confirms.** That's the load-bearing decision — a seatbelt that silently passes what it doesn't recognize is worse than no seatbelt — and the accepted cost (prompting on unrecognized binaries) is documented in the README, not something to fix by defaulting Unknown to run.
+
+`lex.go` is a shell-shaped lexer, not a shell parser. It exists to answer three things the rule tables can't: which words are in *command position* (so `echo "rm -rf /"` is Safe), where one command ends and the next begins (`| && || ; &` outside quotes), and which `>` is a write vs. an fd dup (`2>&1` is not a write; `/dev/null`-style targets are carved out). It is deliberately forgiving of malformed input — `Classify` must be **total**, which the fuzz target enforces along with "any non-Safe result carries a non-empty Reason".
+
+`rules.go` holds four tables checked in order: always-destructive, flag-gated (`sed -i`, `find -delete`, `curl -o`, `tar -x`…), subcommand tables (git/docker/kubectl/systemctl/npm/brew/go/terraform…), and the safe allowlist. **`safeCommands` is the only table where an addition can create a false negative** — everything absent from all four falls through to Unknown, which asks. `sudo` is unconditionally Destructive (including `sudo ls`); `$(…)`, backticks, `eval` and `sh -c` floor at Unknown but still have their bodies analyzed recursively, so a destructive body wins.
+
+This is documented as a best-effort seatbelt with possible false negatives. Keep the honesty in the copy — the README, the config template comment, and `onboard`'s mode description all say so, and the live classifier demo in `smartly onboard` exists precisely so users see it shrug at `frobnicate --all` before trusting it.
+
+### Execution modes and the confirm gate
+
+`config.ExecutionModes()` / `ValidateExecutionMode` are the single source of truth for `auto | confirm | confirm-destructive`; `resolveMode` in `internal/cli/root.go` defers to them rather than carrying its own switch, and there is deliberately no normalization (a `"Confirm"` typo is a fail-closed error). `--confirm`/`-y` short-circuit *before* the config mode is consulted, which is what makes "--confirm always asks, -y never asks" literally true — don't move the classifier ahead of that check.
+
+`modeAsks(mode, verdict)` is the one place mode and classifier meet. The verdict is computed and written to the log's `risk` field on **every** request regardless of mode, so `auto` users can still audit what ran without a prompt.
+
+`confirmExecution` takes a `confirmPrompt{Command, Mode, Reason}`; `renderConfirmPrompt` is split out so the copy is testable without a controlling terminal. The `/dev/tty` mechanics and fail-closed behavior are unchanged from the original gate — `openTTY()` is just extracted for reuse by `onboard`.
+
+### `smartly onboard` and the one TUI exception (`internal/onboard`, `internal/cli/onboard*.go`)
+
+`internal/onboard` holds the **pure decision logic** — `Questions` (which steps run given the answers so far), `Apply` (answers + base config → config), `Validate`, `SeedFromConfig`, `Detector` (PATH/env lookups behind injectable funcs), `BackupExisting`, and all the user-facing copy. It imports nothing terminal-shaped, which is what lets the invariants be tested without a tty: no key-shaped question exists anywhere in the flow, `Apply` refuses `context: full` without `FullContextConfirmed`, and `Answers` has no field that could hold a credential.
+
+`internal/cli/onboard.go` + `onboard_ui.go` are the presentation layer and **the only place in the codebase that draws a form** (`github.com/charmbracelet/huh`, bound to `/dev/tty` via `WithInput`/`WithOutput`). This is a deliberate, scoped exception: the core generate-and-run pipeline stays TUI-free because it has to work with stdin consumed by the shell wrapper's command substitution, and the confirm gate is intentionally three lines of `bufio`. **Don't pull huh/bubbletea into `root.go` or `confirm.go`.**
+
+Safety rules baked into the flow, in order of how badly it would go to break them: no API key is ever asked for, echoed or written (env-var detection only; a key already in the user's file is carried through on write but replaced with a placeholder in anything printed to the terminal); `context: full` requires a second explicit confirmation stating the consequence; rc files are never edited, only the eval line is printed; an existing config is backed up (timestamped, 0600) and pre-seeds the answers; the final write is confirmed, and declining prints the YAML and writes nothing; no tty fails closed pointing at `smartly config init`. `execution.mode: auto` remains the compiled-in default — onboarding changes nothing for anyone who never runs it.
+
+Brand: the typed logo is `smartly >_` with only `>_` in electric cyan `#00DDF5`; ink `#151716`, deep cyan `#007F91`, amber `#FFB547` for attention/confirmation only, red `#F05D5E` for failure only (no classifier verdict is ever red — being asked is not a failure). huh is themed from `ThemeBase()` in `onboardTheme()`.
+
+### Config template rendering (`internal/cli/template.go`)
+
+`config init` and `onboard` both write config.yaml through `renderConfigTemplate(cfg)`. There is exactly one copy of the file's prose, because those comments carry safety warnings (the shell-history warning on `context: full`, the verbatim-storage warning on the log, "no api_key field exists" on the CLI providers) and two drifting copies would be a silent regression. The round-trip test (render → unmarshal → `DeepEqual`) plus the assertion that each security comment survives is what pins it; `config.ContractHome` is the inverse of `expandHome` so `log.path` is written back as `~/...`.
+
 ### Shell wrapper + logging correlation (`internal/shellinit`, `internal/logging`)
 
 `smartly init bash|zsh` emits a function (embedded via `go:embed`) that the user sources. It calls `smartly --print-only` (generates + prints the command, doesn't run it) and then `eval`s the result in the *parent* shell — this is how a generated `cd`/`export` actually affects the calling shell, since a subprocess can't do that on its own. Because `--print-only` and the wrapper's subsequent `--record-exit` call are two separate `smartly` processes, they can't share Go memory to correlate a request with its outcome — the wrapper generates a request ID itself and passes it via the `SMARTLY_REQUEST_ID` env var to both calls.
@@ -57,4 +92,4 @@ The history log (`internal/logging`) is **strictly append-only**: a `request` re
 
 ### Testing conventions
 
-All tests are pure — no live network calls or subprocess invocations run in `go test`. The CLI-provider tests (`claudecli_test.go`, `codexcli_test.go`) use fixture strings captured from real live invocations (embedded as consts, with comments noting when a fixture was invented vs. actually captured) rather than mocking the subprocess layer. `exec.LookPath` failure paths are tested by pointing `PATH` at an empty temp dir via `t.Setenv`.
+All tests are pure — no live network calls or subprocess invocations run in `go test`. Nothing in the suite needs a controlling terminal either: the tty-only paths (`confirmExecution`, `smartly onboard`) are covered by asserting they **fail closed** without one, and their decision logic and rendered copy are extracted into pure functions (`renderConfirmPrompt`, `dryRunNote`, everything in `internal/onboard`) so the behavior that matters is testable without a pty. Tests that would need a real terminal `t.Skip` rather than assert on unreachable behavior. The CLI-provider tests (`claudecli_test.go`, `codexcli_test.go`) use fixture strings captured from real live invocations (embedded as consts, with comments noting when a fixture was invented vs. actually captured) rather than mocking the subprocess layer. `exec.LookPath` failure paths are tested by pointing `PATH` at an empty temp dir via `t.Setenv`.

@@ -18,7 +18,8 @@ $ smartly remove all worktrees except main
 
 **Auto-run is the default, including for destructive commands.** There is no
 confirmation prompt unless you configure one. See [Execution
-mode](#execution-mode) if you want a safety net.
+mode](#execution-mode) if you want a safety net — `confirm-destructive` asks
+only when the generated command looks like it changes something.
 
 ## Install
 
@@ -31,6 +32,20 @@ go install github.com/rizwanreza/smartly-cli/cmd/smartly@latest
 
 Out of the box smartly uses `provider: anthropic`, so it needs only
 `ANTHROPIC_API_KEY` set in your environment. No config file is required.
+
+Then, if you'd like to be walked through the settings:
+
+```
+smartly onboard
+```
+
+It asks which model to use, how careful you want smartly to be, and how
+much of your environment it gets to see — then shows you the whole config
+before writing anything. It never asks for an API key; it checks whether
+the environment variable is set and prints the export line if it isn't.
+See [Onboarding](#onboarding).
+
+You don't need it. smartly runs on defaults with `ANTHROPIC_API_KEY` set.
 
 ## Usage
 
@@ -60,8 +75,10 @@ A few things worth knowing before you rely on it:
 - It generates commands appropriate to your OS, accounting for GNU (Linux)
   vs BSD (macOS) userland differences — `sed -i ''` on macOS vs `sed -i` on
   Linux, and so on.
-- If you'd rather see the command before it runs, use `--confirm` or set
-  `execution.mode: confirm` — see [Execution mode](#execution-mode).
+- If you'd rather see the command before it runs, use `--confirm`, or set
+  `execution.mode: confirm` (ask every time) or `confirm-destructive` (ask
+  only when the command looks like it changes something) — see [Execution
+  mode](#execution-mode).
 - Only one shell command line is generated per invocation. Pipes, `&&`, and
   redirects within that line are fine; smartly won't produce multi-step
   scripts.
@@ -112,7 +129,8 @@ Config lives at `$XDG_CONFIG_HOME/smartly/config.yaml`, or
 required.
 
 ```
-smartly config init    # write a default config.yaml
+smartly onboard        # walk through the settings interactively
+smartly config init    # write a default config.yaml, no questions
 smartly config show    # print the resolved config (secrets redacted)
 smartly config path    # print the resolved config file path
 ```
@@ -123,7 +141,7 @@ Full schema:
 provider: anthropic          # anthropic | openai | claude-cli | codex-cli
 
 execution:
-  mode: auto                 # auto | confirm
+  mode: auto                 # auto | confirm | confirm-destructive
 
 context: light                # none | light | full
 
@@ -158,6 +176,36 @@ provider's default env var (`ANTHROPIC_API_KEY` / `OPENAI_API_KEY`) → the
 config file's `api_key` fallback. The actual key value is never printed by
 `config show`. `claude-cli` and `codex-cli` have no `api_key`-shaped fields
 at all — see below.
+
+### Onboarding
+
+`smartly onboard` walks through provider, model, execution mode, context
+level, log path and shell integration, and writes a config file at the
+end. What it will and won't do:
+
+- **It never asks for an API key.** It checks whether the relevant
+  environment variable is set, shows `✓ found` / `× not found` next to each
+  provider, and prints the `export …=your-key-here` line when one is
+  missing. No key value is ever typed into it, displayed by it, or written
+  to `config.yaml` by it. (An `api_key` you put in the file yourself is
+  left alone — rewriting the file won't delete it — but it isn't printed
+  back to your terminal either.)
+- **It never edits your shell rc file.** It prints the `eval "$(smartly
+  init zsh)"` line for you to add.
+- **It doesn't overwrite silently.** An existing config is copied to a
+  timestamped `config.yaml.backup-…` first, and your existing answers
+  pre-fill the questions.
+- **Nothing is written until you say so.** The last step shows the
+  resolved config and asks. Decline and it prints the file it would have
+  written, and writes nothing. `--dry-run` skips the write step entirely.
+- **`context: full` needs a second, explicit confirmation**, with the
+  consequence spelled out, before it can be selected.
+- **It needs a terminal.** With no controlling terminal it fails closed
+  and points you at `smartly config init`.
+
+If you pick `confirm-destructive`, it offers to run the classifier over a
+few example commands in front of you, so you can see what it does and does
+not catch before you rely on it.
 
 ### CLI-based authentication (claude-cli / codex-cli)
 
@@ -196,7 +244,7 @@ These two providers have real, different tradeoffs from `anthropic`/`openai`:
 ### Execution mode
 
 - `auto` (default): generate and run immediately, no prompt.
-- `confirm`: show the command and ask before running it:
+- `confirm`: show the command and ask before running it, every time:
 
   ```
   → git worktree remove /Users/you/project-fix
@@ -204,15 +252,52 @@ These two providers have real, different tradeoffs from `anthropic`/`openai`:
   ! Run this command? [y/N]
   ```
 
-  The prompt reads from `/dev/tty` directly, so it works even when stdin is
-  otherwise in use. If no controlling terminal is available (CI, cron, a
-  fully non-interactive pipe), it **fails closed** — it will not run the
-  command — rather than hang or silently proceed. Use `-y`/`--yes` in those
-  contexts.
+- `confirm-destructive`: ask only when the command looks like it changes
+  something. A safe command runs straight through; anything else stops and
+  explains itself:
+
+  ```
+  → rm -rf ./build
+
+  ! rm deletes files
+    Run it? [y/N]
+  ```
+
+Confirmation reads from `/dev/tty` directly, so it works even when stdin is
+otherwise in use. If no controlling terminal is available (CI, cron, a
+fully non-interactive pipe), it **fails closed** — it will not run the
+command — rather than hang or silently proceed. Use `-y`/`--yes` in those
+contexts.
 
 Per-invocation overrides: `--confirm` forces the prompt for one call,
-`-y`/`--yes` forces auto-run for one call (these two are mutually exclusive),
-and `--dry-run` prints the command without asking or running it at all.
+`-y`/`--yes` forces auto-run for one call (these two are mutually
+exclusive), and `--dry-run` prints the command, plus what would have
+happened to it, without asking or running it at all.
+
+#### What counts as destructive
+
+`confirm-destructive` uses a local static classifier. It reads the
+generated command string and nothing else — no filesystem checks, no
+network, no second trip to the LLM — and returns one of three verdicts:
+
+- **safe** — recognized and known to be read-only or purely additive
+  (`ls`, `grep`, `git status`, `mkdir`). Runs without asking.
+- **destructive** — recognized and known to mutate something (`rm`, `mv`,
+  `chmod`, `sudo …`, `git push`, `kubectl delete`, `> file`, `sed -i`,
+  `find … -delete`, `… | xargs rm`). Asks.
+- **unknown** — not recognized at all (`frobnicate --all`, `./deploy.sh`,
+  `make build`, anything wrapped in `$(…)` or `eval`). **Asks.**
+
+Unknown asking is the deliberate part: a seatbelt that silently passes
+what it doesn't recognize is worse than no seatbelt. The cost is real —
+this mode will prompt for commands that are perfectly harmless, just
+unrecognized.
+
+**This is a best-effort seatbelt, not a sandbox.** It reads text, not
+intent, and false negatives are possible by construction: quoting tricks,
+an allowlisted tool coaxed into writing (`awk '{print > "f"}'`), or a
+binary that isn't in the tables can all slip through. If you want to see
+every command before it runs, use `confirm`, not `confirm-destructive`.
 
 ### Context levels
 
@@ -237,6 +322,15 @@ correlated by `request_id`. The log is append-only (nothing is ever rewritten
 in place) and the file is created with `0600` permissions. Records are data
 only; no symbols, color, or other presentation ever enters them.
 
+Request records carry a `risk` field (`safe` / `destructive` / `unknown`)
+with the classifier's verdict. It's recorded whatever your execution mode
+is, so if you run on `auto` you can still go back and see what ran without
+asking:
+
+```
+jq 'select(.type == "request" and .risk == "destructive") | .command' ~/.config/smartly/history.log
+```
+
 **This log stores your raw sentences and generated commands verbatim**, which
 may include anything sensitive you typed — treat it like shell history.
 
@@ -246,9 +340,9 @@ may include anything sensitive you typed — treat it like shell history.
 smartly <request>
 
 Execution:
-      --confirm          ask before running the generated command
-  -y, --yes              run without asking, even if execution.mode is confirm
-      --dry-run          print the generated command instead of running it
+      --confirm          always ask before running, whatever execution.mode says
+  -y, --yes              never ask before running, whatever execution.mode says
+      --dry-run          show what would run — and what would happen to it — without running it
 
 Context:
       --context string   how much of your environment to send: none|light|full
@@ -263,6 +357,7 @@ Other:
       --print-only       internal: used by the `smartly init` shell function
       --record-exit int  internal: used by the `smartly init` shell function
 
+smartly onboard [--dry-run]
 smartly init bash|zsh
 smartly config init|show|path
 ```

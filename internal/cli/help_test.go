@@ -29,6 +29,7 @@ func TestHelpSnapshotOpensWithTheTypedLogoAndTagline(t *testing.T) {
 		"\n" +
 		"Usage:\n" +
 		"  smartly <request>\n" +
+		"  smartly onboard\n" +
 		"  smartly init bash|zsh\n" +
 		"  smartly config init|show|path\n"
 

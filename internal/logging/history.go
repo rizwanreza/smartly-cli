@@ -38,7 +38,13 @@ type RequestRecord struct {
 	Outcome      Outcome `json:"outcome"`
 	Error        string  `json:"error,omitempty"`
 	ContextLevel string  `json:"context_level"`
-	DurationMS   int64   `json:"duration_ms"`
+	// Risk is the static classifier's verdict for Command (safe |
+	// destructive | unknown). It is recorded for every request regardless
+	// of execution.mode, so an auto-run user can still audit after the
+	// fact what ran without a prompt. omitempty because records written
+	// before a command was generated have no verdict to report.
+	Risk       string `json:"risk,omitempty"`
+	DurationMS int64  `json:"duration_ms"`
 }
 
 type CompletionRecord struct {
@@ -95,6 +101,7 @@ type Entry struct {
 	Outcome      Outcome `json:"outcome,omitempty"`
 	Error        string  `json:"error,omitempty"`
 	ContextLevel string  `json:"context_level,omitempty"`
+	Risk         string  `json:"risk,omitempty"`
 	DurationMS   int64   `json:"duration_ms,omitempty"`
 	ExitCode     *int    `json:"exit_code,omitempty"`
 }

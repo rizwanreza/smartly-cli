@@ -4,6 +4,7 @@ import (
 	"syscall"
 	"testing"
 
+	"github.com/rizwanreza/smartly-cli/internal/classify"
 	"github.com/rizwanreza/smartly-cli/internal/config"
 )
 
@@ -123,9 +124,16 @@ func TestResolveMode(t *testing.T) {
 		{name: "empty config defaults to auto", cfgMode: "", want: "auto"},
 		{name: "explicit auto", cfgMode: "auto", want: "auto"},
 		{name: "explicit confirm", cfgMode: "confirm", want: "confirm"},
+		{name: "explicit confirm-destructive", cfgMode: "confirm-destructive", want: "confirm-destructive"},
 		{name: "typo value errors", cfgMode: "comfirm", wantErr: true},
+		{name: "wrong case errors, no normalization", cfgMode: "Confirm", wantErr: true},
+		{name: "underscore spelling errors", cfgMode: "confirm_destructive", wantErr: true},
 		{name: "typo value with --confirm flag overrides to confirm", cfgMode: "comfirm", confirmFlag: true, want: "confirm"},
 		{name: "typo value with -y flag overrides to auto", cfgMode: "comfirm", yesFlag: true, want: "auto"},
+		// --confirm/-y short-circuit before the config mode is read, which
+		// is what makes "--confirm always asks, -y never asks" true.
+		{name: "--confirm beats confirm-destructive", cfgMode: "confirm-destructive", confirmFlag: true, want: "confirm"},
+		{name: "-y beats confirm-destructive", cfgMode: "confirm-destructive", yesFlag: true, want: "auto"},
 	}
 
 	for _, tt := range tests {
@@ -142,6 +150,82 @@ func TestResolveMode(t *testing.T) {
 			}
 			if got != tt.want {
 				t.Errorf("resolveMode(%q) = %q, want %q", tt.cfgMode, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestModeAsks(t *testing.T) {
+	safe := classify.Result{Risk: classify.Safe}
+	unknown := classify.Result{Risk: classify.Unknown, Reason: "unrecognized command: frobnicate"}
+	destructive := classify.Result{Risk: classify.Destructive, Reason: "rm deletes files"}
+
+	tests := []struct {
+		mode    string
+		verdict classify.Result
+		want    bool
+	}{
+		{config.ModeAuto, safe, false},
+		{config.ModeAuto, destructive, false}, // auto is auto, deliberately
+		{config.ModeAuto, unknown, false},
+
+		{config.ModeConfirm, safe, true}, // confirm is unconditional
+		{config.ModeConfirm, destructive, true},
+		{config.ModeConfirm, unknown, true},
+
+		{config.ModeConfirmDestructive, safe, false},
+		{config.ModeConfirmDestructive, destructive, true},
+		// Unknown asks: an unrecognized command is not a known-safe one.
+		{config.ModeConfirmDestructive, unknown, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.mode+"/"+tt.verdict.Risk.String(), func(t *testing.T) {
+			if got := modeAsks(tt.mode, tt.verdict); got != tt.want {
+				t.Errorf("modeAsks(%q, %v) = %v, want %v", tt.mode, tt.verdict.Risk, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestDryRunNote(t *testing.T) {
+	safe := classify.Result{Risk: classify.Safe}
+	destructive := classify.Result{Risk: classify.Destructive, Reason: "rm deletes files"}
+
+	tests := []struct {
+		name    string
+		mode    string
+		verdict classify.Result
+		want    string
+	}{
+		{
+			name: "auto never asks", mode: config.ModeAuto, verdict: safe,
+			want: "would run without asking",
+		},
+		{
+			// Under auto a destructive command still runs — say so plainly
+			// rather than implying a prompt that isn't coming.
+			name: "auto still reports the risk", mode: config.ModeAuto, verdict: destructive,
+			want: "! would run without asking — rm deletes files",
+		},
+		{
+			name: "confirm asks with no classifier reason", mode: config.ModeConfirm, verdict: safe,
+			want: "! would ask first — execution.mode: confirm",
+		},
+		{
+			name: "confirm-destructive quotes the classifier", mode: config.ModeConfirmDestructive, verdict: destructive,
+			want: "! would ask first — rm deletes files",
+		},
+		{
+			name: "confirm-destructive stays quiet on safe commands", mode: config.ModeConfirmDestructive, verdict: safe,
+			want: "would run without asking",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := dryRunNote(tt.mode, tt.verdict); got != tt.want {
+				t.Errorf("dryRunNote(%q, %v) = %q, want %q", tt.mode, tt.verdict.Risk, got, tt.want)
 			}
 		})
 	}
