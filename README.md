@@ -31,6 +31,20 @@ go install github.com/rizwanreza/smartly-cli/cmd/smartly@latest
 (A Homebrew tap is planned once this is stable enough to tag a release —
 see `.goreleaser.yaml`.)
 
+Then, if you'd like to be walked through the settings:
+
+```
+smartly onboard
+```
+
+It asks which model to use, how careful you want smartly to be, and how
+much of your environment it gets to see — then shows you the whole config
+before writing anything. It never asks for an API key; it checks whether
+the environment variable is set and prints the export line if it isn't.
+See [Onboarding](#onboarding).
+
+You don't need it. smartly runs on defaults with `ANTHROPIC_API_KEY` set.
+
 ## Usage
 
 ```
@@ -90,7 +104,8 @@ is required — smartly runs on defaults as long as `ANTHROPIC_API_KEY` is
 set in your environment.
 
 ```
-smartly config init    # write a default config.yaml
+smartly onboard        # walk through the settings interactively
+smartly config init    # write a default config.yaml, no questions
 smartly config show    # print the resolved config (secrets redacted)
 smartly config path    # print the resolved config file path
 ```
@@ -136,6 +151,36 @@ the provider's default env var (`ANTHROPIC_API_KEY` / `OPENAI_API_KEY`) →
 the config file's `api_key` fallback. The actual key value is never printed
 by `config show`. `claude-cli` and `codex-cli` have no `api_key`-shaped
 fields at all — see below.
+
+### Onboarding
+
+`smartly onboard` walks through provider, model, execution mode, context
+level, log path and shell integration, and writes a config file at the
+end. What it will and won't do:
+
+- **It never asks for an API key.** It checks whether the relevant
+  environment variable is set, shows `✓ found` / `× not found` next to each
+  provider, and prints the `export …=your-key-here` line when one is
+  missing. No key value is ever typed into it, displayed by it, or written
+  to `config.yaml` by it. (An `api_key` you put in the file yourself is
+  left alone — rewriting the file won't delete it — but it isn't printed
+  back to your terminal either.)
+- **It never edits your shell rc file.** It prints the `eval "$(smartly
+  init zsh)"` line for you to add.
+- **It doesn't overwrite silently.** An existing config is copied to a
+  timestamped `config.yaml.backup-…` first, and your existing answers
+  pre-fill the questions.
+- **Nothing is written until you say so.** The last step shows the
+  resolved config and asks. Decline and it prints the file it would have
+  written, and writes nothing. `--dry-run` skips the write step entirely.
+- **`context: full` needs a second, explicit confirmation**, with the
+  consequence spelled out, before it can be selected.
+- **It needs a terminal.** With no controlling terminal it fails closed
+  and points you at `smartly config init`.
+
+If you pick `confirm-destructive`, it offers to run the classifier over a
+few example commands in front of you, so you can see what it does and does
+not catch before you rely on it.
 
 ### CLI-based authentication (claude-cli / codex-cli)
 
@@ -272,6 +317,7 @@ smartly <sentence...>
 --print-only               internal: used by the shell wrapper, not meant for manual use
 --record-exit int          internal: used by the shell wrapper, not meant for manual use
 
+smartly onboard [--dry-run]
 smartly init bash|zsh
 smartly config init|show|path
 ```
