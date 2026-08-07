@@ -93,8 +93,8 @@ func TestNewClaudeCLIProvider_MissingBinary(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected an error when the claude binary is missing from PATH, got nil")
 	}
-	if got := err.Error(); !strings.Contains(got, "claude CLI not found") || !strings.Contains(got, "claude login") {
-		t.Errorf("error message = %q, want it to mention \"claude CLI not found\" and \"claude login\"", got)
+	if got := err.Error(); !strings.Contains(got, "claude CLI was not found") || !strings.Contains(got, "claude login") {
+		t.Errorf("error message = %q, want it to mention \"claude CLI was not found\" and \"claude login\"", got)
 	}
 }
 

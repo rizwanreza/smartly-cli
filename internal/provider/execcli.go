@@ -65,11 +65,9 @@ func runCLI(ctx context.Context, binary string, args []string) (stdout, stderr [
 func lookPathOrHardFail(binary, cliName, loginCmd, apiFallbackProvider string) error {
 	if _, err := exec.LookPath(binary); err != nil {
 		return &Error{
-			Kind: ErrKindInvalid,
-			Message: fmt.Sprintf(
-				"%s CLI not found on PATH (looked for %q) — install %s and run `%s`, or use provider: %s with an API key instead",
-				cliName, binary, cliName, loginCmd, apiFallbackProvider,
-			),
+			Kind:    ErrKindInvalid,
+			Message: fmt.Sprintf("The %s CLI was not found on PATH (looked for %q).", cliName, binary),
+			Hint:    fmt.Sprintf("Install %s and run `%s`, or use --provider %s with an API key instead.", cliName, loginCmd, apiFallbackProvider),
 		}
 	}
 	return nil
