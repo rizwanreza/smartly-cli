@@ -22,8 +22,12 @@ func TestGather_NoneLevel(t *testing.T) {
 }
 
 func TestGather_UnknownLevel(t *testing.T) {
-	if _, err := Gather("bogus", t.TempDir()); err == nil {
-		t.Error("expected error for unknown context level, got nil")
+	_, err := Gather("bogus", t.TempDir())
+	if err == nil {
+		t.Fatal("expected error for unknown context level, got nil")
+	}
+	if !strings.Contains(err.Error(), "valid: none, light, full") {
+		t.Errorf("error = %q, want it to mention all valid levels", err.Error())
 	}
 }
 

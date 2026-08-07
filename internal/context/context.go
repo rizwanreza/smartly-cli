@@ -38,7 +38,7 @@ func Gather(level, cwd string) (*Info, error) {
 		info.Text = gatherFull(cwd)
 		return info, nil
 	default:
-		return nil, fmt.Errorf("unknown context level %q (valid: none, light)", level)
+		return nil, fmt.Errorf("unknown context level %q (valid: none, light, full)", level)
 	}
 }
 

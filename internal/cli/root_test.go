@@ -87,3 +87,39 @@ func TestApplyOverrides(t *testing.T) {
 		})
 	}
 }
+
+func TestResolveMode(t *testing.T) {
+	tests := []struct {
+		name        string
+		cfgMode     string
+		confirmFlag bool
+		yesFlag     bool
+		want        string
+		wantErr     bool
+	}{
+		{name: "empty config defaults to auto", cfgMode: "", want: "auto"},
+		{name: "explicit auto", cfgMode: "auto", want: "auto"},
+		{name: "explicit confirm", cfgMode: "confirm", want: "confirm"},
+		{name: "typo value errors", cfgMode: "comfirm", wantErr: true},
+		{name: "typo value with --confirm flag overrides to confirm", cfgMode: "comfirm", confirmFlag: true, want: "confirm"},
+		{name: "typo value with -y flag overrides to auto", cfgMode: "comfirm", yesFlag: true, want: "auto"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := resolveMode(tt.cfgMode, tt.confirmFlag, tt.yesFlag)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("resolveMode(%q) error = nil, want error", tt.cfgMode)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("resolveMode(%q) unexpected error: %v", tt.cfgMode, err)
+			}
+			if got != tt.want {
+				t.Errorf("resolveMode(%q) = %q, want %q", tt.cfgMode, got, tt.want)
+			}
+		})
+	}
+}

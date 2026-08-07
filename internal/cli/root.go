@@ -88,12 +88,9 @@ func runRoot(cmd *cobra.Command, args []string) error {
 	}
 	applyOverrides(cfg, providerFlag, modelFlag, contextFlag)
 
-	mode := cfg.Execution.Mode
-	if confirmFlag {
-		mode = "confirm"
-	}
-	if yesFlag {
-		mode = "auto"
+	mode, err := resolveMode(cfg.Execution.Mode, confirmFlag, yesFlag)
+	if err != nil {
+		return err
 	}
 
 	logMode := "exec"
@@ -207,6 +204,30 @@ func runRoot(cmd *cobra.Command, args []string) error {
 		os.Exit(exitCode)
 	}
 	return nil
+}
+
+// resolveMode determines the effective execution mode from the configured
+// value and the --confirm/--yes flags. --confirm and --yes are mutually
+// exclusive (enforced by cobra) and always take precedence over config.
+// Otherwise the config value applies: "" and "auto" mean auto-run, "confirm"
+// means prompt first, and any other value is a fail-closed config error —
+// deliberately no normalization (lowercasing/trimming), so a typo like
+// "Confirm" or "comfirm" errors instead of silently behaving as auto.
+func resolveMode(cfgMode string, confirmFlag, yesFlag bool) (string, error) {
+	if confirmFlag {
+		return "confirm", nil
+	}
+	if yesFlag {
+		return "auto", nil
+	}
+	switch cfgMode {
+	case "", "auto":
+		return "auto", nil
+	case "confirm":
+		return "confirm", nil
+	default:
+		return "", fmt.Errorf("invalid execution.mode %q in config (valid: auto, confirm)", cfgMode)
+	}
 }
 
 func applyOverrides(cfg *config.Config, providerOverride, modelOverride, contextOverride string) {
