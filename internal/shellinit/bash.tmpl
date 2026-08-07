@@ -1,0 +1,13 @@
+smartly() {
+  local __smartly_id="smartly-$$-$RANDOM$RANDOM"
+  local __smartly_out
+  __smartly_out="$(SMARTLY_REQUEST_ID="$__smartly_id" command smartly --print-only "$@")"
+  local __smartly_rc=$?
+  if [ $__smartly_rc -ne 0 ]; then
+    return $__smartly_rc
+  fi
+  eval "$__smartly_out"
+  local __smartly_exit=$?
+  SMARTLY_REQUEST_ID="$__smartly_id" command smartly --record-exit "$__smartly_exit" >/dev/null 2>&1
+  return $__smartly_exit
+}
