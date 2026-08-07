@@ -114,7 +114,7 @@ release:
     Or download a binary below (macOS and Linux, amd64 and arm64 — verify
     with `checksums.txt`).
 
-    Docs: https://rizwanreza.github.io/smartly-cli/
+    Docs: https://smartlycli.com/
   footer: |
     ---
 

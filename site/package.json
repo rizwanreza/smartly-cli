@@ -8,7 +8,7 @@
     "dev": "astro dev",
     "start": "astro dev",
     "build": "astro build && node scripts/check-links.mjs",
-    "build:root": "BASE_PATH=/ astro build && BASE_PATH=/ node scripts/check-links.mjs",
+    "build:subpath": "BASE_PATH=/smartly-cli astro build && BASE_PATH=/smartly-cli node scripts/check-links.mjs",
     "build:only": "astro build",
     "build:assets": "node scripts/build-assets.mjs",
     "check:links": "node scripts/check-links.mjs",

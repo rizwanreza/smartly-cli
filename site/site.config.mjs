@@ -2,25 +2,26 @@
 //
 // Base path handling
 // ------------------
-// GitHub *project* pages are served from https://<user>.github.io/<repo>/, so
-// every internal URL has to carry a `/smartly-cli` prefix. Rather than hard-code
-// that (which makes the site untestable at the domain root), the base is read
-// from the BASE_PATH environment variable and defaults to the project-pages
-// value. The Pages workflow passes `${{ steps.pages.outputs.base_path }}`, and
-// `npm run build:root` passes `/` so the exact same source can be verified at
-// the root of a domain.
+// The site is served from the apex of smartlycli.com, so the base is `/`. It is
+// still read from BASE_PATH rather than hard-coded, because the sub-path case is
+// one DNS change away from being real again: GitHub *project* pages live at
+// https://<user>.github.io/<repo>/, where every internal URL must carry a
+// `/smartly-cli` prefix. The Pages workflow passes
+// `${{ steps.pages.outputs.base_path }}`, which follows whatever the Pages site
+// is actually configured as, and `npm run build:subpath` exercises the prefixed
+// case so that machinery cannot rot unnoticed.
 //
 // Everything downstream derives from this: Astro's `base` option, the
 // `withBase()` helper used by components, and the rehype plugin that rewrites
 // root-relative links written inside Markdown.
 
-const rawBase = process.env.BASE_PATH ?? '/smartly-cli';
+const rawBase = process.env.BASE_PATH ?? '/';
 
 /** Normalised to either '/' or '/segment' (leading slash, no trailing slash). */
 export const BASE_PATH = normaliseBase(rawBase);
 
 /** Origin only — Astro joins this with `base` to build canonical URLs. */
-export const SITE_URL = process.env.SITE_URL ?? 'https://rizwanreza.github.io';
+export const SITE_URL = process.env.SITE_URL ?? 'https://smartlycli.com';
 
 export const REPO_URL = 'https://github.com/rizwanreza/smartly-cli';
 export const REPO_EDIT_URL = `${REPO_URL}/edit/main/site`;

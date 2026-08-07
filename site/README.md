@@ -1,7 +1,7 @@
 # smartly website
 
 Landing page, documentation and brand guideline for the `smartly` CLI, published
-to GitHub Pages at <https://rizwanreza.github.io/smartly-cli/>.
+to GitHub Pages at <https://smartlycli.com/>.
 
 Astro, static output, no client framework, no analytics, no third-party font
 requests.
@@ -11,32 +11,33 @@ requests.
 ```bash
 cd site
 npm install
-npm run dev      # http://localhost:4321/smartly-cli/
+npm run dev      # http://localhost:4321/
 ```
 
-The dev server serves under the project base path by default, so local URLs
-match production. To develop at the domain root instead:
+The dev server serves from the root by default, matching production at
+<https://smartlycli.com/>. To develop under a base path instead:
 
 ```bash
-BASE_PATH=/ npm run dev
+BASE_PATH=/smartly-cli npm run dev
 ```
 
 ## Production build
 
 ```bash
-npm run build          # astro build + link validation, base path /smartly-cli
-npm run build:root     # the same, with base path /
+npm run build          # astro build + link validation, base path /
+npm run build:subpath  # the same, under /smartly-cli
 npm run preview        # serve the built dist/
 ```
 
 `npm run build` fails if any internal link, heading fragment or asset is broken,
 or if an internal URL is missing the configured base path.
 
-To simulate a project-pages deploy exactly, serve `dist/` from a `smartly-cli/`
-sub-directory:
+`build:subpath` exists because the site is one DNS change away from being served
+from a sub-path again — it keeps the base-path machinery honest even though
+production no longer uses it. To simulate that deploy exactly:
 
 ```bash
-npm run build
+npm run build:subpath
 mkdir -p /tmp/pages && ln -sfn "$PWD/dist" /tmp/pages/smartly-cli
 python3 -m http.server 8080 --directory /tmp/pages
 # http://localhost:8080/smartly-cli/
@@ -45,7 +46,7 @@ python3 -m http.server 8080 --directory /tmp/pages
 ## Base path handling
 
 Every deployment-shaped value lives in [`site.config.mjs`](./site.config.mjs).
-`BASE_PATH` (default `/smartly-cli`) feeds three things:
+`BASE_PATH` (default `/`) feeds three things:
 
 1. Astro's `base` option, which prefixes generated routes and bundled assets.
 2. `withBase()` in [`src/lib/url.ts`](./src/lib/url.ts), used by every component
