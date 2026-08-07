@@ -18,7 +18,9 @@ when generating commands.
 
 **Auto-run is the default, including for destructive commands.** There is
 no confirmation prompt unless you configure one. See [Execution
-mode](#execution-mode) below if you want a safety net.
+mode](#execution-mode) below if you want a safety net —
+`confirm-destructive` asks only when the generated command looks like it
+changes something.
 
 ## Install
 
@@ -54,8 +56,10 @@ A few things worth knowing before you rely on it:
   [Context levels](#context-levels).
 - It generates commands appropriate to your OS (`sed -i ''` on macOS/BSD
   vs `sed -i` on Linux/GNU, etc.).
-- If you'd rather see the command before it runs, use `--confirm` or set
-  `execution.mode: confirm` — see [Execution mode](#execution-mode).
+- If you'd rather see the command before it runs, use `--confirm`, or set
+  `execution.mode: confirm` (ask every time) or `confirm-destructive` (ask
+  only when the command looks like it changes something) — see [Execution
+  mode](#execution-mode).
 - Only one shell command line is generated per invocation. Pipes, `&&`,
   and redirects within that line are fine; smartly won't produce
   multi-step scripts.
@@ -97,7 +101,7 @@ Full schema:
 provider: anthropic          # anthropic | openai | claude-cli | codex-cli
 
 execution:
-  mode: auto                 # auto | confirm
+  mode: auto                 # auto | confirm | confirm-destructive
 
 context: light                # none | light | full
 
@@ -170,16 +174,54 @@ These two providers have real, different tradeoffs from `anthropic`/`openai`:
 ### Execution mode
 
 - `auto` (default): generate and run immediately, no prompt.
-- `confirm`: print the command and ask `[y/N]` before running it. Reads
-  from `/dev/tty` directly, so it works even when stdin is otherwise in
-  use. If no controlling terminal is available (CI, cron, a fully
-  non-interactive pipe), it **fails closed** — it will not run the command —
-  rather than hang or silently proceed. Use `-y`/`--yes` in those contexts.
+- `confirm`: print the command and ask `[y/N]` before running it, every
+  time.
+- `confirm-destructive`: ask only when the command looks like it changes
+  something. A safe command runs straight through; anything else stops and
+  explains itself:
+
+  ```
+  $ smartly delete the build directory
+  rm -rf ./build
+  ! rm deletes files
+  Run this command? [y/N]
+  ```
+
+Confirmation reads from `/dev/tty` directly, so it works even when stdin is
+otherwise in use. If no controlling terminal is available (CI, cron, a
+fully non-interactive pipe), it **fails closed** — it will not run the
+command — rather than hang or silently proceed. Use `-y`/`--yes` in those
+contexts.
 
 Per-invocation overrides: `--confirm` forces the prompt for one call,
 `-y`/`--yes` forces auto-run for one call (these two are mutually
-exclusive), and `--dry-run` prints the command without asking or running
-it at all.
+exclusive), and `--dry-run` prints the command, plus what would have
+happened to it, without asking or running it at all.
+
+#### What counts as destructive
+
+`confirm-destructive` uses a local static classifier. It reads the
+generated command string and nothing else — no filesystem checks, no
+network, no second trip to the LLM — and returns one of three verdicts:
+
+- **safe** — recognized and known to be read-only or purely additive
+  (`ls`, `grep`, `git status`, `mkdir`). Runs without asking.
+- **destructive** — recognized and known to mutate something (`rm`, `mv`,
+  `chmod`, `sudo …`, `git push`, `kubectl delete`, `> file`, `sed -i`,
+  `find … -delete`, `… | xargs rm`). Asks.
+- **unknown** — not recognized at all (`frobnicate --all`, `./deploy.sh`,
+  `make build`, anything wrapped in `$(…)` or `eval`). **Asks.**
+
+Unknown asking is the deliberate part: a seatbelt that silently passes
+what it doesn't recognize is worse than no seatbelt. The cost is real —
+this mode will prompt for commands that are perfectly harmless, just
+unrecognized.
+
+**This is a best-effort seatbelt, not a sandbox.** It reads text, not
+intent, and false negatives are possible by construction: quoting tricks,
+an allowlisted tool coaxed into writing (`awk '{print > "f"}'`), or a
+binary that isn't in the tables can all slip through. If you want to see
+every command before it runs, use `confirm`, not `confirm-destructive`.
 
 ### Context levels
 
@@ -203,6 +245,15 @@ and, once the command's exit code is known, a separate `completion` record
 correlated by `request_id`. The log is append-only (nothing is ever
 rewritten in place) and the file is created with `0600` permissions.
 
+Request records carry a `risk` field (`safe` / `destructive` / `unknown`)
+with the classifier's verdict. It's recorded whatever your execution mode
+is, so if you run on `auto` you can still go back and see what ran without
+asking:
+
+```
+jq 'select(.type == "request" and .risk == "destructive") | .command' ~/.config/smartly/history.log
+```
+
 **This log stores your raw sentences and generated commands verbatim**,
 which may include anything sensitive you typed — treat it like shell
 history.
@@ -215,9 +266,9 @@ smartly <sentence...>
 --provider string     override the configured provider (anthropic|openai|claude-cli|codex-cli)
 --model string          override the configured model for the active provider
 --context string        override the configured context level (none|light|full)
---confirm                force a confirmation prompt for this call
--y, --yes                 force auto-run for this call
---dry-run                  show the generated command without asking or running it
+--confirm                always ask before running, whatever execution.mode says
+-y, --yes                 never ask before running, whatever execution.mode says
+--dry-run                  show the generated command, and what would happen to it, without running it
 --print-only               internal: used by the shell wrapper, not meant for manual use
 --record-exit int          internal: used by the shell wrapper, not meant for manual use
 

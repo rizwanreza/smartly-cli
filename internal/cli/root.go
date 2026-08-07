@@ -15,6 +15,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
 
+	"github.com/rizwanreza/smartly-cli/internal/classify"
 	"github.com/rizwanreza/smartly-cli/internal/config"
 	appcontext "github.com/rizwanreza/smartly-cli/internal/context"
 	"github.com/rizwanreza/smartly-cli/internal/logging"
@@ -31,6 +32,9 @@ var Version = "dev"
 var (
 	commandStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("39"))
 	errorStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("203"))
+	// warnStyle is amber, reserved for attention and confirmation — never
+	// for failure, which stays errorStyle's red.
+	warnStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#FFB547"))
 )
 
 var (
@@ -63,8 +67,8 @@ func init() {
 	rootCmd.Flags().StringVar(&providerFlag, "provider", "", "override configured provider (anthropic|openai|claude-cli|codex-cli)")
 	rootCmd.Flags().StringVar(&modelFlag, "model", "", "override configured model for the active provider")
 	rootCmd.Flags().StringVar(&contextFlag, "context", "", "override configured context level (none|light|full)")
-	rootCmd.Flags().BoolVar(&confirmFlag, "confirm", false, "force a confirmation prompt even if execution.mode is auto")
-	rootCmd.Flags().BoolVarP(&yesFlag, "yes", "y", false, "force auto-run even if execution.mode is confirm")
+	rootCmd.Flags().BoolVar(&confirmFlag, "confirm", false, "always ask before running, whatever execution.mode says")
+	rootCmd.Flags().BoolVarP(&yesFlag, "yes", "y", false, "never ask before running, whatever execution.mode says")
 	rootCmd.Flags().BoolVar(&dryRunFlag, "dry-run", false, "show what would run, without asking or running it")
 	rootCmd.Flags().BoolVar(&printOnlyFlag, "print-only", false, "internal: print the sanitized command to stdout only (used by the shell wrapper)")
 	rootCmd.Flags().IntVar(&recordExitCode, "record-exit", -1, "internal: record the exit code of a wrapper-executed command")
@@ -161,6 +165,12 @@ func runRoot(cmd *cobra.Command, args []string) error {
 	}
 	rec.Command = command
 
+	// The verdict is computed for every request regardless of mode, and
+	// logged, so `execution.mode: auto` users can still audit after the fact
+	// what smartly ran without asking.
+	verdict := classify.Classify(command)
+	rec.Risk = verdict.Risk.String()
+
 	if dryRunFlag {
 		// The shell wrapper always invokes us with --print-only and
 		// unconditionally evals whatever we write to stdout. If the preview
@@ -175,11 +185,19 @@ func runRoot(cmd *cobra.Command, args []string) error {
 		} else {
 			fmt.Fprintln(os.Stdout, commandStyle.Render(command))
 		}
+		// The classification note always goes to stderr, even for a direct
+		// invocation, so `smartly --dry-run ... | pbcopy` still copies just
+		// the command.
+		fmt.Fprintln(os.Stderr, dryRunNoteStyle(mode, verdict))
 		return fail(logging.OutcomeDeclined, "dry_run", nil)
 	}
 
-	if mode == "confirm" {
-		approved, ttyErr := confirmExecution(command)
+	if modeAsks(mode, verdict) {
+		reason := ""
+		if mode == config.ModeConfirmDestructive {
+			reason = verdict.Reason
+		}
+		approved, ttyErr := confirmExecution(confirmPrompt{Command: command, Mode: mode, Reason: reason})
 		if ttyErr != nil {
 			return fail(logging.OutcomeDeclined, "no_tty", ttyErr)
 		}
@@ -251,26 +269,71 @@ func exitCodeFromWaitStatus(ws syscall.WaitStatus) int {
 
 // resolveMode determines the effective execution mode from the configured
 // value and the --confirm/--yes flags. --confirm and --yes are mutually
-// exclusive (enforced by cobra) and always take precedence over config.
-// Otherwise the config value applies: "" and "auto" mean auto-run, "confirm"
-// means prompt first, and any other value is a fail-closed config error —
-// deliberately no normalization (lowercasing/trimming), so a typo like
-// "Confirm" or "comfirm" errors instead of silently behaving as auto.
+// exclusive (enforced by cobra) and always take precedence over config —
+// they short-circuit before the config mode (and therefore before the
+// classifier) is consulted at all, which is exactly the promise made to the
+// user: --confirm always asks, -y never asks.
+//
+// Otherwise the config value applies: "" means the field is absent, which
+// is auto-run. Any value that isn't a known mode is a fail-closed config
+// error, with no normalization, so a typo like "Confirm" or "comfirm"
+// errors instead of silently behaving as auto.
 func resolveMode(cfgMode string, confirmFlag, yesFlag bool) (string, error) {
 	if confirmFlag {
-		return "confirm", nil
+		return config.ModeConfirm, nil
 	}
 	if yesFlag {
-		return "auto", nil
+		return config.ModeAuto, nil
 	}
-	switch cfgMode {
-	case "", "auto":
-		return "auto", nil
-	case "confirm":
-		return "confirm", nil
+	if cfgMode == "" {
+		return config.ModeAuto, nil
+	}
+	if err := config.ValidateExecutionMode(cfgMode); err != nil {
+		return "", fmt.Errorf("%w in config %s", err, config.Path())
+	}
+	return cfgMode, nil
+}
+
+// modeAsks reports whether the effective mode stops to confirm a command
+// with this verdict. It is the one place the mode and the classifier meet:
+// "auto" never asks, "confirm" always asks, and "confirm-destructive" asks
+// for anything the classifier didn't recognize as safe (Unknown included —
+// see internal/classify).
+func modeAsks(mode string, verdict classify.Result) bool {
+	switch mode {
+	case config.ModeConfirm:
+		return true
+	case config.ModeConfirmDestructive:
+		return verdict.NeedsConfirm()
 	default:
-		return "", fmt.Errorf("invalid execution.mode %q in config (valid: auto, confirm)", cfgMode)
+		return false
 	}
+}
+
+// dryRunNote is the one-line explanation --dry-run prints under the
+// generated command: what would have happened, and why.
+func dryRunNote(mode string, verdict classify.Result) string {
+	if modeAsks(mode, verdict) {
+		if verdict.Reason != "" {
+			return "! would ask first — " + verdict.Reason
+		}
+		return "! would ask first — execution.mode: " + mode
+	}
+	if verdict.Risk != classify.Safe {
+		return "! would run without asking — " + verdict.Reason
+	}
+	return "would run without asking"
+}
+
+// dryRunNoteStyle colors the note amber only when it is an attention line
+// (one that starts with "!"), keeping amber reserved for confirmation and
+// caution rather than ordinary output.
+func dryRunNoteStyle(mode string, verdict classify.Result) string {
+	note := dryRunNote(mode, verdict)
+	if strings.HasPrefix(note, "!") {
+		return warnStyle.Render(note)
+	}
+	return note
 }
 
 func applyOverrides(cfg *config.Config, providerOverride, modelOverride, contextOverride string) {

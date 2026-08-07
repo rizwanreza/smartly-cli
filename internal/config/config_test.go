@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -200,5 +201,57 @@ func TestResolveAPIKey_Precedence(t *testing.T) {
 				t.Errorf("ResolveAPIKey() = %q, want %q", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestValidateExecutionMode(t *testing.T) {
+	tests := []struct {
+		mode    string
+		wantErr bool
+	}{
+		{"auto", false},
+		{"confirm", false},
+		{"confirm-destructive", false},
+		// No normalization: a near miss must fail loudly rather than
+		// silently degrade to auto-run.
+		{"", true},
+		{"Confirm", true},
+		{"comfirm", true},
+		{" auto", true},
+		{"auto ", true},
+		{"confirm_destructive", true},
+		{"confirm destructive", true},
+		{"CONFIRM-DESTRUCTIVE", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.mode, func(t *testing.T) {
+			err := ValidateExecutionMode(tt.mode)
+			if tt.wantErr && err == nil {
+				t.Errorf("ValidateExecutionMode(%q) = nil, want an error", tt.mode)
+			}
+			if !tt.wantErr && err != nil {
+				t.Errorf("ValidateExecutionMode(%q) = %v, want nil", tt.mode, err)
+			}
+			// The error has to tell the user what the valid values are.
+			if err != nil {
+				for _, m := range ExecutionModes() {
+					if !strings.Contains(err.Error(), m) {
+						t.Errorf("error %q should list valid mode %q", err, m)
+					}
+				}
+			}
+		})
+	}
+}
+
+// ExecutionModes is the single source of truth, so the compiled-in default
+// must be a member of it.
+func TestExecutionModes_IncludesDefault(t *testing.T) {
+	if err := ValidateExecutionMode(Defaults().Execution.Mode); err != nil {
+		t.Errorf("the default execution.mode is not a valid mode: %v", err)
+	}
+	if Defaults().Execution.Mode != ModeAuto {
+		t.Errorf("default execution.mode = %q, want %q — auto-run is intentional product behavior", Defaults().Execution.Mode, ModeAuto)
 	}
 }

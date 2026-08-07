@@ -20,7 +20,37 @@ type Config struct {
 }
 
 type ExecutionConfig struct {
-	Mode string `yaml:"mode"` // auto | confirm
+	Mode string `yaml:"mode"` // auto | confirm | confirm-destructive
+}
+
+// The valid execution.mode values. ModeConfirmDestructive is hyphenated to
+// match the `claude-cli`/`codex-cli` style already used for provider names.
+const (
+	ModeAuto               = "auto"
+	ModeConfirm            = "confirm"
+	ModeConfirmDestructive = "confirm-destructive"
+)
+
+// ExecutionModes returns the valid execution.mode values in documented
+// order (least to most friction). It is the single source of truth: both
+// validation and the user-facing lists in `smartly onboard` and error
+// messages read from it, so a new mode can't be added in one place and
+// forgotten in another.
+func ExecutionModes() []string {
+	return []string{ModeAuto, ModeConfirm, ModeConfirmDestructive}
+}
+
+// ValidateExecutionMode rejects anything that isn't an exact match for a
+// known mode. Deliberately no normalization (no lowercasing, no trimming):
+// a typo like "Confirm" or "comfirm" must fail loudly rather than silently
+// degrade to auto-run.
+func ValidateExecutionMode(mode string) error {
+	for _, m := range ExecutionModes() {
+		if mode == m {
+			return nil
+		}
+	}
+	return fmt.Errorf("invalid execution.mode %q (valid: %s)", mode, strings.Join(ExecutionModes(), ", "))
 }
 
 type LogConfig struct {
@@ -79,7 +109,7 @@ const (
 func Defaults() *Config {
 	return &Config{
 		Provider:  "anthropic",
-		Execution: ExecutionConfig{Mode: "auto"},
+		Execution: ExecutionConfig{Mode: ModeAuto},
 		Context:   "light",
 		Log:       LogConfig{Path: filepath.Join(Dir(), "history.log")},
 		Providers: ProvidersConfig{

@@ -127,8 +127,13 @@ provider: anthropic
 
 execution:
   # auto: run the generated command immediately, no confirmation.
-  # confirm: ask [y/N] before running (reads from /dev/tty; fails closed
-  #   with no controlling terminal, e.g. in CI or cron — use -y there).
+  # confirm: ask [y/N] before running everything.
+  # confirm-destructive: ask only when a local static classifier thinks the
+  #   command mutates something — or doesn't recognize it at all. Best
+  #   effort, not a sandbox: it can miss things.
+  # Confirmation reads from /dev/tty and fails closed with no controlling
+  # terminal (CI, cron) — use -y there. --confirm always asks and -y never
+  # asks, whatever this says.
   mode: auto
 
 # How much environment context to send to the LLM: none | light | full
