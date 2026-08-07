@@ -48,14 +48,6 @@ const path = Astro.url.pathname;
       <div class="drawer__group">
         <h2 class="drawer__group-title">More</h2>
         <ul>
-          <li>
-            <a
-              href={withBase('/brand/')}
-              aria-current={isActive(path, withBase('/brand/'))
-                ? 'page'
-                : undefined}>Brand</a
-            >
-          </li>
           <li><a href={REPO_URL} rel="noopener">GitHub</a></li>
         </ul>
       </div>

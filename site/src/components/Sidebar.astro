@@ -26,18 +26,6 @@ const path = Astro.url.pathname;
       </div>
     ))
   }
-  <div class="sidebar__group">
-    <h2 class="sidebar__title">Reference</h2>
-    <ul>
-      <li>
-        <a
-          href={withBase('/brand/')}
-          aria-current={isActive(path, withBase('/brand/')) ? 'page' : undefined}
-          >Brand guidelines</a
-        >
-      </li>
-    </ul>
-  </div>
 </nav>
 
 <style>
