@@ -33,11 +33,18 @@ changelog:
       - "^docs:"
       - "^test:"
 
+# Publishing the cask needs write access to the tap repo, which the release
+# workflow's default GITHUB_TOKEN does not have. Until a HOMEBREW_TAP_TOKEN
+# secret exists (a fine-grained PAT with contents:write on
+# rizwanreza/homebrew-tap), the cask file is still generated into dist/ but
+# not pushed — the release itself succeeds either way.
 homebrew_casks:
   - name: smartly
+    skip_upload: '{{ if envOrDefault "HOMEBREW_TAP_TOKEN" "" }}false{{ else }}true{{ end }}'
     repository:
       owner: rizwanreza
       name: homebrew-tap
+      token: '{{ envOrDefault "HOMEBREW_TAP_TOKEN" "" }}'
     directory: Casks
     homepage: "https://github.com/rizwanreza/smartly-cli"
     description: "Turn an English sentence into an executable shell command"
