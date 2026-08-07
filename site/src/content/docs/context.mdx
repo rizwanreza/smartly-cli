@@ -2,7 +2,7 @@
 title: Context
 description: The three context levels — none, light and full — and exactly what each one sends to the model.
 eyebrow: Configure
-lede: Context is what makes "remove all worktrees except main" resolvable. It is also what leaves your machine, so it is worth knowing what each level includes.
+lede: Context is what makes "delete all my branches that are already merged into main" resolvable. It is also what leaves your machine, so it is worth knowing what each level includes.
 ---
 
 import Callout from '../../components/Callout.astro';
@@ -34,11 +34,12 @@ Adds a capped directory listing plus git branch, status and worktree
 information. This is what lets a vague request resolve against reality:
 
 <Transform
-  request="remove all worktrees except main"
-  command="git worktree remove /Users/you/project-fix"
+  request="delete all my branches that are already merged into main"
+  command="git branch --merged main | grep -vE '^\*| main$' | xargs git branch -d"
 />
 
-smartly could not have produced that path without knowing which worktrees exist.
+smartly could not have produced that pipeline without knowing your branches and
+what has already merged.
 
 ### `full`
 

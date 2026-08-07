@@ -70,18 +70,18 @@ export ANTHROPIC_API_KEY="sk-ant-..."   # add to ~/.bashrc
 Start with `--dry-run`, which prints the command and does nothing else:
 
 ```bash
-smartly --dry-run tail logs from development.log
+smartly --dry-run show hidden files sorted by size
 ```
 
 <Transform
-  request="tail logs from development.log"
-  command="tail -f development.log"
+  request="show hidden files sorted by size"
+  command="ls -lahS"
 />
 
 Drop the flag when you want it to run:
 
 ```bash
-smartly tail logs from development.log
+smartly show hidden files sorted by size
 ```
 
 ## Put a gate in front of it

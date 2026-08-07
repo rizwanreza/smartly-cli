@@ -18,13 +18,13 @@ No quoting required — everything after the flags is the sentence. smartly
 generates one shell command and, by default, runs it immediately.
 
 <Transform
-  request="remove all worktrees except main"
-  command="git worktree remove /Users/you/project-fix"
+  request="show hidden files sorted by size"
+  command="ls -lahS"
 />
 
 <Transform
-  request="find all occurrences of git and replace with svn"
-  command="find . -type f -exec sed -i '' 's/git/svn/g' {} +"
+  request="replace api.example.com with api.internal in every yaml file"
+  command="find . -name '*.y*ml' -exec sed -i '' 's/api\.example\.com/api.internal/g' {} +"
 />
 
 ## What you get
@@ -39,7 +39,8 @@ macOS and `sed -i` on Linux.
 
 **A command grounded in where you are.** By default smartly sends a capped
 directory listing plus your git branch, status and worktrees, so a request like
-"remove all worktrees except main" resolves against what is actually there. See
+"delete all my branches that are already merged into main" resolves against
+what is actually there. See
 [Context](/docs/context/) for the three levels and what each one sends.
 
 <Callout type="warn" title="The command runs unless you say otherwise.">
@@ -66,8 +67,8 @@ These override configuration for a single call and change nothing on disk.
 
 ```bash
 smartly --provider codex-cli --context none show me disk usage by directory
-smartly --dry-run compress the logs directory
-smartly --confirm delete every merged branch
+smartly --dry-run delete all my branches that are already merged into main
+smartly --confirm kill whatever is listening on port 3000
 ```
 
 ## Trying a provider without committing to it
