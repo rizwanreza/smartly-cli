@@ -1,0 +1,124 @@
+/* ==========================================================================
+   Smartly design tokens
+   The seven brand colours are canonical. Everything else in this file is
+   derived from them and exists only so that functional text and controls clear
+   WCAG AA on the surface they sit on.
+   ========================================================================== */
+
+@font-face {
+  font-family: 'Instrument Sans';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('../assets/fonts/instrument-sans-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Instrument Sans';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('../assets/fonts/instrument-sans-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+    U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../assets/fonts/geist-mono-regular.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('../assets/fonts/geist-mono-medium.woff2') format('woff2');
+}
+
+:root {
+  /* --- Brand colours (canonical) ---------------------------------------- */
+  --ink: #151716;
+  --white: #ffffff;
+  --paper: #f4f1e8;
+  --cyan: #00ddf5;
+  --cyan-deep: #007f91;
+  --amber: #ffb547;
+  --red: #f05d5e;
+
+  /* --- Derived neutrals -------------------------------------------------- */
+  --ink-muted: #5f6461; /* 5.3:1 on paper, 6.0:1 on white */
+  --ink-faint: #8b908c; /* decorative only, never functional text */
+  --rule: #e2ddcf; /* hairline on paper */
+  --rule-strong: #cfc9b6;
+  --rule-white: #e8e5db; /* hairline on white */
+  --paper-deep: #ece8db; /* pressed / hovered paper */
+
+  /* Deep cyan, one step down. Small text needs this on warm paper, where
+     #007F91 lands at 4.19:1. */
+  --cyan-text: #006473;
+  --cyan-dim: rgba(0, 221, 245, 0.16);
+
+  --amber-deep: #8a5200; /* amber family, AA as text */
+  --amber-wash: #fff6e6;
+  --red-deep: #a3282a;
+
+  /* --- Ink surfaces ------------------------------------------------------ */
+  --on-ink: #f4f1e8;
+  --on-ink-muted: #a8aca6; /* 7.1:1 on ink */
+  --ink-rule: #2c302e;
+  --ink-raised: #1d201f;
+
+  /* --- Type -------------------------------------------------------------- */
+  --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, -apple-system,
+    'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo,
+    Consolas, 'Liberation Mono', monospace;
+
+  --step--1: 0.8125rem;
+  --step-0: 1.0625rem;
+  --step-1: 1.1875rem;
+  --step-2: clamp(1.375rem, 1.28rem + 0.44vw, 1.625rem);
+  --step-3: clamp(1.625rem, 1.44rem + 0.86vw, 2.125rem);
+  --step-4: clamp(2rem, 1.65rem + 1.6vw, 2.9rem);
+  --step-5: clamp(2.6rem, 1.55rem + 4.6vw, 5.25rem);
+
+  --label: 0.6875rem; /* mono eyebrows */
+  --tracking-label: 0.14em;
+  --tracking-display: -0.035em;
+
+  /* --- Space ------------------------------------------------------------- */
+  --s-1: 0.25rem;
+  --s-2: 0.5rem;
+  --s-3: 0.75rem;
+  --s-4: 1rem;
+  --s-5: 1.5rem;
+  --s-6: 2rem;
+  --s-7: 3rem;
+  --s-8: 4rem;
+  --s-9: 6rem;
+  --s-10: 8rem;
+
+  --shell: 76rem;
+  --measure: 68ch;
+  --radius: 4px;
+  --radius-lg: 8px;
+
+  --header-h: 60px;
+
+  --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
+  --dur: 240ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur: 1ms;
+  }
+}

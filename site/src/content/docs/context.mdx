@@ -1,0 +1,66 @@
+---
+title: Context
+description: The three context levels — none, light and full — and exactly what each one sends to the model.
+eyebrow: Configure
+lede: Context is what makes "remove all worktrees except main" resolvable. It is also what leaves your machine, so it is worth knowing what each level includes.
+---
+
+import Callout from '../../components/Callout.astro';
+import Transform from '../../components/Transform.astro';
+
+## The three levels
+
+```yaml
+context: light    # none | light | full
+```
+
+Or for one call:
+
+```bash
+smartly --context none show me the largest files here
+```
+
+### `none`
+
+Only your sentence is sent. Nothing about your machine, your directory or your
+repository.
+
+Use it when the request is self-contained, or when you are in a directory whose
+file names you would rather not send anywhere.
+
+### `light` — the default
+
+Adds a capped directory listing plus git branch, status and worktree
+information. This is what lets a vague request resolve against reality:
+
+<Transform
+  request="remove all worktrees except main"
+  command="git worktree remove /Users/you/project-fix"
+/>
+
+smartly could not have produced that path without knowing which worktrees exist.
+
+### `full`
+
+Everything in `light`, plus a tail of your recent shell history — `$HISTFILE`,
+or `~/.zsh_history` / `~/.bash_history` depending on your shell.
+
+<Callout type="warn" title="`full` is never the default. Turn it on deliberately.">
+  Your shell history can contain secrets typed inline — tokens, passwords pasted
+  into a command. Enabling `full` sends that history to a third-party LLM API on
+  every request.
+</Callout>
+
+## Choosing a level
+
+| | `none` | `light` | `full` |
+| --- | --- | --- | --- |
+| Your sentence | Sent | Sent | Sent |
+| Directory listing (capped) | — | Sent | Sent |
+| Git branch, status, worktrees | — | Sent | Sent |
+| Recent shell history | — | — | Sent |
+
+`light` is the default because it is the level at which requests like "it", "all
+worktrees except main" and "the log file in here" start working. If that is not
+worth sending a directory listing for a particular request, use `--context none`
+for that request rather than changing the default.

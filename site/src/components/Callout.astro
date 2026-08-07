@@ -1,0 +1,88 @@
+---
+interface Props {
+  /**
+   * note — neutral context, cyan rule.
+   * warn — a real consequence: something runs, something is sent, something is
+   *        written to disk. Amber rule.
+   */
+  type?: 'note' | 'warn';
+  title: string;
+}
+
+const { type = 'note', title } = Astro.props;
+---
+
+<aside class:list={['callout', `callout--${type}`]}>
+  <p class="callout__title">
+    <span class="callout__glyph mono" aria-hidden="true">
+      {type === 'warn' ? '!' : '›'}
+    </span>
+    {title}
+  </p>
+  <div class="callout__body">
+    <slot />
+  </div>
+</aside>
+
+<style>
+  .callout {
+    margin-block: var(--s-5);
+    padding: var(--s-4) var(--s-5);
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-left-width: 3px;
+    border-radius: var(--radius);
+  }
+
+  .callout--note {
+    border-left-color: var(--cyan-deep);
+  }
+
+  .callout--warn {
+    background: var(--amber-wash);
+    border-color: #f0e2c8;
+    border-left-color: var(--amber);
+    border-left-width: 3px;
+  }
+
+  .callout__title {
+    display: flex;
+    align-items: baseline;
+    gap: 0.55rem;
+    font-weight: 600;
+    letter-spacing: -0.012em;
+  }
+
+  .callout__glyph {
+    font-weight: 500;
+    color: var(--cyan-deep);
+  }
+
+  .callout--warn .callout__glyph {
+    color: var(--amber-deep);
+  }
+
+  .callout__body {
+    margin-top: 0.4rem;
+    font-size: 0.9375rem;
+    color: var(--ink);
+  }
+
+  .callout__body :global(> :first-child) {
+    margin-top: 0;
+  }
+
+  .callout__body :global(> * + *) {
+    margin-top: var(--s-3);
+  }
+
+  .callout__body :global(pre) {
+    background: var(--white);
+  }
+
+  .callout__body :global(ul) {
+    padding-left: 1.1rem;
+    display: grid;
+    gap: 0.3rem;
+  }
+</style>

@@ -1,0 +1,147 @@
+/* Long-form documentation typography. Deliberately undecorated: no animation,
+   no cards, nothing that competes with the commands on the page. */
+
+.prose {
+  max-width: var(--measure);
+}
+
+.prose > * + * {
+  margin-top: var(--s-4);
+}
+
+.prose h2 {
+  margin-top: var(--s-8);
+  padding-top: var(--s-5);
+  border-top: 1px solid var(--rule-white);
+  font-size: var(--step-3);
+}
+
+/* The page header already ends in a rule — a second one directly under it is
+   just a gap. */
+.prose > h2:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.prose h3 {
+  margin-top: var(--s-6);
+}
+
+.prose h4 {
+  margin-top: var(--s-5);
+}
+
+.prose h2 + *,
+.prose h3 + *,
+.prose h4 + * {
+  margin-top: var(--s-3);
+}
+
+.prose .heading {
+  position: relative;
+  scroll-margin-top: calc(var(--header-h) + var(--s-5));
+}
+
+/* The glyph is drawn here rather than written into the DOM: the anchor is a
+   child of the heading, and Astro builds table-of-contents labels from heading
+   text content. */
+.heading-anchor::after {
+  content: '#';
+}
+
+.heading-anchor {
+  margin-left: 0.4em;
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 0.7em;
+  color: var(--cyan-deep);
+  text-decoration: none;
+  opacity: 0;
+  transition: opacity var(--dur) var(--ease);
+}
+
+.heading:hover .heading-anchor,
+.heading-anchor:focus-visible {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .heading-anchor {
+    opacity: 0.55;
+  }
+}
+
+/* minmax(0, 1fr) rather than the implicit auto column: list items containing a
+   long non-breaking `code` span would otherwise set a max-content minimum and
+   push the whole page sideways on a narrow screen. */
+.prose ul,
+.prose ol {
+  padding-left: 1.3rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.45rem;
+}
+
+.prose li > ul,
+.prose li > ol {
+  margin-top: 0.45rem;
+}
+
+.prose li::marker {
+  color: var(--ink-faint);
+}
+
+.prose blockquote {
+  border-left: 3px solid var(--cyan-deep);
+  padding-left: var(--s-4);
+  color: var(--ink-muted);
+}
+
+.prose dl {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.prose dt {
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  font-weight: 500;
+}
+
+.prose dd {
+  margin: 0 0 var(--s-3);
+  color: var(--ink-muted);
+}
+
+.prose hr {
+  border: 0;
+  border-top: 1px solid var(--rule-white);
+  margin-block: var(--s-6);
+}
+
+/* Markdown tables arrive bare; a rehype plugin wraps each one in
+   .table-scroll so they scroll instead of forcing the page sideways. */
+.prose table {
+  min-width: 30rem;
+}
+
+.prose figure {
+  margin: 0;
+}
+
+.prose figcaption {
+  font-size: var(--step--1);
+  color: var(--ink-muted);
+  margin-top: var(--s-2);
+}
+
+.prose kbd {
+  font-family: var(--font-mono);
+  font-size: 0.78em;
+  border: 1px solid var(--rule-strong);
+  border-bottom-width: 2px;
+  border-radius: 3px;
+  padding: 0.1em 0.35em;
+  background: var(--paper);
+}

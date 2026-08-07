@@ -1,0 +1,105 @@
+---
+interface Props {
+  command?: string;
+  /** `size="lg"` is the hero treatment. */
+  size?: 'md' | 'lg';
+}
+
+const {
+  command = 'go install github.com/rizwanreza/smartly-cli/cmd/smartly@latest',
+  size = 'md',
+} = Astro.props;
+---
+
+<div class:list={['install', `install--${size}`]}>
+  <code class="install__cmd"
+    ><span class="install__prompt" aria-hidden="true">$</span>{command}</code
+  >
+  <button type="button" class="install__copy" data-install-copy data-command={command}>
+    <span data-install-label>Copy</span>
+    <span class="sr-only">install command</span>
+  </button>
+</div>
+
+<style>
+  .install {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    border: 1px solid var(--rule-strong);
+    border-radius: var(--radius);
+    background: var(--paper);
+    overflow: hidden;
+    max-width: 100%;
+  }
+
+  .install__cmd {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    gap: 0.6em;
+    align-items: center;
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    padding: 0.7rem 0.9rem;
+    overflow-x: auto;
+    white-space: nowrap;
+    background: none;
+    border: 0;
+  }
+
+  .install--lg .install__cmd {
+    font-size: 0.875rem;
+    padding: 0.9rem 1rem;
+  }
+
+  .install__prompt {
+    color: var(--cyan-deep);
+    flex: none;
+  }
+
+  .install__copy {
+    flex: none;
+    border: 0;
+    border-left: 1px solid var(--rule-strong);
+    background: var(--white);
+    color: var(--ink-muted);
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding-inline: 0.9rem;
+    cursor: pointer;
+    transition: color var(--dur) var(--ease), background var(--dur) var(--ease);
+  }
+
+  .install__copy:hover {
+    color: var(--ink);
+    background: var(--paper-deep);
+  }
+
+  .install__copy[data-copied] {
+    color: var(--cyan-text);
+  }
+</style>
+
+<script>
+  document
+    .querySelectorAll<HTMLButtonElement>('[data-install-copy]')
+    .forEach((button) => {
+      const label = button.querySelector<HTMLElement>('[data-install-label]')!;
+      button.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(button.dataset.command ?? '');
+          label.textContent = 'Copied';
+        } catch {
+          label.textContent = 'Press ⌘C';
+        }
+        button.dataset.copied = 'true';
+        window.setTimeout(() => {
+          label.textContent = 'Copy';
+          delete button.dataset.copied;
+        }, 1800);
+      });
+    });
+</script>

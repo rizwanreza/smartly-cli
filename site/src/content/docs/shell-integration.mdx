@@ -1,0 +1,80 @@
+---
+title: Shell integration
+description: Source smartly's bash or zsh function so a generated cd or export actually changes your interactive shell.
+eyebrow: Start here
+lede: A subprocess cannot change its parent shell. If you want a generated `cd` or `export` to stick, source the shell function.
+---
+
+import Callout from '../../components/Callout.astro';
+import Platform from '../../components/Platform.astro';
+
+## Why it exists
+
+Some generated commands change your shell's state rather than doing work — `cd`
+into a directory, `export` a variable. A plain subprocess cannot do that for
+you: it changes its own environment and then exits.
+
+smartly ships a shell function that runs the generation in a subprocess, then
+evaluates the result in your shell. Add one line to your shell startup file:
+
+<Platform>
+  <Fragment slot="macos">
+```bash
+# ~/.zshrc
+eval "$(smartly init zsh)"
+```
+  </Fragment>
+  <Fragment slot="linux">
+```bash
+# ~/.bashrc
+eval "$(smartly init bash)"
+```
+  </Fragment>
+</Platform>
+
+Both shells are supported on both platforms — pick the one you actually run:
+
+```bash
+eval "$(smartly init bash)"   # bash
+eval "$(smartly init zsh)"    # zsh
+```
+
+Open a new shell, or `source` the file, and you are done.
+
+## What changes, and what does not
+
+Without the shell function, `smartly` still works for everything that does not
+mutate your shell's state, which is most commands. A generated `cd` or `export`
+will run — it just affects the subprocess it ran in, not your interactive shell.
+
+| | Without the function | With the function |
+| --- | --- | --- |
+| `rm`, `find`, `git`, pipelines | Works | Works |
+| Generated `cd` | Runs, then the directory is lost | Your shell changes directory |
+| Generated `export` | Runs, then the variable is lost | Your shell keeps the variable |
+
+<Callout type="warn" title="The function evaluates the generated command in your shell.">
+  That is the entire point of it, and it is why it can change your working
+  directory. It does not add a confirmation step. If you want one, set
+  `execution.mode: confirm` — see [Execution and
+  safety](/docs/execution-and-safety/).
+</Callout>
+
+## How it works
+
+The function calls `smartly --print-only`, which generates and prints the
+command without running it, and then `eval`s that output in the parent shell.
+Once the command finishes, the function calls `smartly --record-exit` with the
+exit code so the outcome lands in your [history log](/docs/execution-and-safety/#logging).
+
+`--print-only` and `--record-exit` are internal. They are documented here because
+you will see them if you read the emitted function, but they are not meant to be
+typed by hand.
+
+Inspect what gets sourced at any time:
+
+```bash
+smartly init zsh
+```
+
+It prints the function to stdout — that is what `eval` consumes.

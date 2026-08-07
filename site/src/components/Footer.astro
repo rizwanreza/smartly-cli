@@ -1,0 +1,149 @@
+---
+import { withBase } from '../lib/url';
+import { docsNav, docHref } from '../lib/nav';
+import { REPO_URL } from '../../site.config.mjs';
+
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer">
+  <div class="shell site-footer__inner">
+    <div class="site-footer__brand">
+      <img
+        class="site-footer__logo"
+        src={withBase('/brand/smartly-logo-light.svg')}
+        alt="smartly"
+        width="760"
+        height="240"
+      />
+      <p class="site-footer__line">You know what. Smartly knows how.</p>
+    </div>
+
+    <nav class="site-footer__nav" aria-label="Footer">
+      {
+        docsNav.map((group) => (
+          <div class="site-footer__group">
+            <h2 class="site-footer__heading">{group.label}</h2>
+            <ul>
+              {group.items.map((item) => (
+                <li>
+                  <a href={withBase(docHref(item.slug))}>{item.label}</a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))
+      }
+      <div class="site-footer__group">
+        <h2 class="site-footer__heading">More</h2>
+        <ul>
+          <li><a href={withBase('/brand/')}>Brand guidelines</a></li>
+          <li><a href={REPO_URL} rel="noopener">GitHub repository</a></li>
+          <li>
+            <a href={`${REPO_URL}/blob/main/README.md`} rel="noopener">README</a
+            >
+          </li>
+        </ul>
+      </div>
+    </nav>
+  </div>
+
+  <div class="shell site-footer__base">
+    <p>&copy; {year} smartly. Commands without the ceremony.</p>
+    <p class="mono site-footer__colophon">
+      Instrument Sans &amp; Geist Mono, self-hosted.
+    </p>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    background: var(--paper);
+    border-top: 1px solid var(--rule);
+    padding-block: var(--s-8) var(--s-5);
+    margin-top: var(--s-9);
+  }
+
+  .site-footer__inner {
+    display: grid;
+    gap: var(--s-7);
+  }
+
+  .site-footer__logo {
+    height: 30px;
+    width: auto;
+    mix-blend-mode: multiply;
+  }
+
+  .site-footer__line {
+    margin-top: var(--s-3);
+    color: var(--ink-muted);
+    font-size: 0.9375rem;
+    max-width: 24ch;
+  }
+
+  .site-footer__nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--s-6) var(--s-5);
+  }
+
+  .site-footer__heading {
+    font-family: var(--font-mono);
+    font-weight: 500;
+    font-size: var(--label);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    margin-bottom: var(--s-3);
+  }
+
+  .site-footer__nav ul {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    gap: 0.42rem;
+  }
+
+  .site-footer__nav a {
+    font-size: 0.9375rem;
+    text-decoration: none;
+    color: var(--ink);
+  }
+
+  .site-footer__nav a:hover {
+    color: var(--cyan-text);
+    text-decoration: underline;
+    text-decoration-color: var(--cyan);
+    text-underline-offset: 3px;
+  }
+
+  .site-footer__base {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-3) var(--s-5);
+    justify-content: space-between;
+    margin-top: var(--s-8);
+    padding-top: var(--s-4);
+    border-top: 1px solid var(--rule);
+    font-size: var(--step--1);
+    color: var(--ink-muted);
+  }
+
+  .site-footer__colophon {
+    font-size: 0.75rem;
+  }
+
+  @media (min-width: 48rem) {
+    .site-footer__nav {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .site-footer__inner {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 2.2fr);
+      gap: var(--s-8);
+    }
+  }
+</style>

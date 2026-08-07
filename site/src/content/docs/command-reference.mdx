@@ -1,0 +1,107 @@
+---
+title: Command reference
+description: Every smartly command, flag and configuration key in one place.
+eyebrow: Run
+lede: The whole surface area — commands, flags, config keys and limitations — on one page.
+---
+
+import Callout from '../../components/Callout.astro';
+
+## Synopsis
+
+```
+smartly <sentence...>
+
+smartly init bash|zsh
+smartly config init|show|path
+```
+
+## Flags
+
+| Flag | Type | Effect |
+| --- | --- | --- |
+| `--provider` | string | Override the configured provider: `anthropic`, `openai`, `claude-cli`, `codex-cli`. |
+| `--model` | string | Override the configured model for the active provider. |
+| `--context` | string | Override the configured context level: `none`, `light`, `full`. |
+| `--confirm` | bool | Force a confirmation prompt for this call. |
+| `-y`, `--yes` | bool | Force auto-run for this call. |
+| `--dry-run` | bool | Show the generated command without asking or running it. |
+| `--print-only` | bool | Internal. Used by the shell wrapper, not meant for manual use. |
+| `--record-exit` | int | Internal. Used by the shell wrapper, not meant for manual use. |
+
+`--confirm` and `-y`/`--yes` are mutually exclusive.
+
+<Callout type="warn" title="Without --dry-run or --confirm, the command runs.">
+  The default `execution.mode` is `auto`. See [Execution and
+  safety](/docs/execution-and-safety/).
+</Callout>
+
+## Subcommands
+
+### `smartly init bash|zsh`
+
+Prints the shell function to stdout. Source it with `eval "$(smartly init zsh)"`
+so a generated `cd` or `export` affects your interactive shell. See [Shell
+integration](/docs/shell-integration/).
+
+### `smartly config init`
+
+Writes a default `config.yaml` to the resolved config path.
+
+### `smartly config show`
+
+Prints the resolved configuration. API key values are redacted.
+
+### `smartly config path`
+
+Prints the resolved config file path — `$XDG_CONFIG_HOME/smartly/config.yaml`,
+or `~/.config/smartly/config.yaml` if `XDG_CONFIG_HOME` is unset.
+
+## Configuration keys
+
+| Key | Values | Default |
+| --- | --- | --- |
+| `provider` | `anthropic`, `openai`, `claude-cli`, `codex-cli` | `anthropic` |
+| `execution.mode` | `auto`, `confirm` | `auto` |
+| `context` | `none`, `light`, `full` | `light` |
+| `log.path` | path | `~/.config/smartly/history.log` |
+| `providers.anthropic.model` | string | `claude-opus-5` |
+| `providers.anthropic.api_key_env` | string | `ANTHROPIC_API_KEY` |
+| `providers.anthropic.api_key` | string | `""` (fallback only) |
+| `providers.anthropic.base_url` | string | `""` |
+| `providers.openai.model` | string | `""` — required |
+| `providers.openai.api_key_env` | string | `OPENAI_API_KEY` |
+| `providers.openai.api_key` | string | `""` (fallback only) |
+| `providers.openai.base_url` | string | `""` |
+| `providers.claude-cli.model` | string | `haiku` — required |
+| `providers.claude-cli.binary` | string | `claude` |
+| `providers.claude-cli.max_budget_usd` | number | `0.50` |
+| `providers.codex-cli.model` | string | `""` — optional |
+| `providers.codex-cli.binary` | string | `codex` |
+
+Full annotated schema: [Configuration](/docs/configuration/#full-schema).
+
+## Environment variables
+
+| Variable | Used for |
+| --- | --- |
+| `ANTHROPIC_API_KEY` | Default key source for `provider: anthropic`. |
+| `OPENAI_API_KEY` | Default key source for `provider: openai`. |
+| `XDG_CONFIG_HOME` | Config directory root. Falls back to `~/.config`. |
+| `HISTFILE` | Shell history file read at `context: full`. |
+
+A variable named by `api_key_env` takes precedence over the provider default.
+See [how keys are resolved](/docs/configuration/#how-api-keys-are-resolved).
+
+## Limitations
+
+- Generates a single shell command line per invocation. Pipes, `&&` and
+  redirects within that line are fine; multi-step scripts are not.
+- Targets bash and zsh on Linux and macOS. Windows and PowerShell are not
+  supported yet.
+- The OpenAI provider ships with no default model — you must set
+  `providers.openai.model` yourself.
+- `claude-cli` and `codex-cli` require the respective CLI installed and
+  separately logged in (`claude login` / `codex login`) — smartly does not manage
+  that login state — and their error classification is best-effort. See
+  [Providers](/docs/providers/#the-tradeoffs).

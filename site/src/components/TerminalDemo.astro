@@ -1,0 +1,324 @@
+---
+/**
+ * The landing page's signature moment: a plain-English request resolving into
+ * one shell command. Every example is taken verbatim from the README.
+ *
+ * Motion is deliberately one transition — the command arrives whole, the way it
+ * does in the terminal. No character-by-character typing.
+ */
+const examples = [
+  {
+    request: 'find all occurrences of git and replace with svn',
+    command: "find . -type f -exec sed -i '' 's/git/svn/g' {} +",
+    note: 'BSD sed on macOS. On Linux the same request generates sed -i.',
+  },
+  {
+    request: 'remove all worktrees except main',
+    command: 'git worktree remove /Users/you/project-fix',
+    note: 'Resolved against the worktrees that actually exist here.',
+  },
+  {
+    request: 'tail logs from development.log',
+    command: 'tail -f development.log',
+    note: 'One command line. Never a multi-step script.',
+  },
+];
+
+/** Split on single-quoted runs so quoted arguments can be tinted cyan. */
+function tokenize(command: string) {
+  return command
+    .split(/('(?:[^']*)')/g)
+    .filter(Boolean)
+    .map((part) => ({ text: part, quoted: part.startsWith("'") }));
+}
+---
+
+<section class="band band--ink demo on-ink" aria-labelledby="demo-title">
+  <div class="shell">
+    <p class="eyebrow">The transform</p>
+    <h2 class="demo__title" id="demo-title">
+      Say the outcome. Get the command.
+    </h2>
+
+    <div class="demo__console" data-demo>
+      <div class="demo__bar">
+        <span class="demo__id mono">smartly</span>
+        <div class="demo__tabs" role="tablist" aria-label="Examples">
+          {
+            examples.map((example, i) => (
+              <button
+                type="button"
+                role="tab"
+                class="demo__dot"
+                data-demo-tab={String(i)}
+                id={`demo-tab-${i}`}
+                aria-controls={`demo-panel-${i}`}
+                aria-selected={i === 0 ? 'true' : 'false'}
+                tabindex={i === 0 ? 0 : -1}
+              >
+                <span class="sr-only">{example.request}</span>
+              </button>
+            ))
+          }
+        </div>
+      </div>
+
+      <div class="demo__stack">
+        {
+          examples.map((example, i) => (
+            <div
+              class="demo__slide"
+              role="tabpanel"
+              id={`demo-panel-${i}`}
+              aria-labelledby={`demo-tab-${i}`}
+              data-demo-panel={String(i)}
+              data-active={i === 0 ? 'true' : undefined}
+            >
+              <p class="demo__line demo__line--in">
+                <span class="demo__glyph" aria-hidden="true">
+                  ›
+                </span>
+                <span>{example.request}</span>
+              </p>
+              <p class="demo__line demo__line--out">
+                <span class="demo__glyph demo__glyph--out" aria-hidden="true">
+                  →
+                </span>
+                <span class="demo__cmd">
+                  {tokenize(example.command).map((token) =>
+                    token.quoted ? (
+                      <span class="demo__q">{token.text}</span>
+                    ) : (
+                      token.text
+                    ),
+                  )}
+                </span>
+              </p>
+              <p class="demo__note">{example.note}</p>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+
+    <p class="demo__caption">
+      Auto-run is the default, so the second line is what actually ran. <a
+        href="#safety">How to put a gate in front of it.</a
+      >
+    </p>
+  </div>
+</section>
+
+<style>
+  .demo__title {
+    font-size: var(--step-3);
+    max-width: 20ch;
+  }
+
+  .demo__console {
+    margin-top: var(--s-6);
+    background: var(--ink-raised);
+    border: 1px solid var(--ink-rule);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+
+  .demo__bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-4);
+    padding: 0.55rem var(--s-4);
+    border-bottom: 1px solid var(--ink-rule);
+  }
+
+  .demo__id {
+    font-size: var(--label);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--on-ink-muted);
+  }
+
+  .demo__tabs {
+    display: flex;
+    gap: 0.35rem;
+  }
+
+  .demo__dot {
+    width: 26px;
+    height: 26px;
+    display: grid;
+    place-items: center;
+    background: none;
+    border: 0;
+    cursor: pointer;
+    border-radius: 50%;
+  }
+
+  .demo__dot::before {
+    content: '';
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #4a4f4c;
+    transition: background var(--dur) var(--ease), transform var(--dur) var(--ease);
+  }
+
+  .demo__dot:hover::before {
+    background: var(--on-ink-muted);
+  }
+
+  .demo__dot[aria-selected='true']::before {
+    background: var(--cyan);
+    transform: scale(1.25);
+  }
+
+  .demo__stack {
+    display: grid;
+    padding: clamp(var(--s-5), 4vw, var(--s-7)) clamp(var(--s-4), 4vw, var(--s-6));
+  }
+
+  .demo__slide {
+    grid-area: 1 / 1;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--dur) var(--ease), visibility 0s linear var(--dur);
+  }
+
+  .demo__slide[data-active] {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity var(--dur) var(--ease), visibility 0s;
+  }
+
+  .demo__line {
+    display: grid;
+    grid-template-columns: 1.5em minmax(0, 1fr);
+    gap: 0.2em;
+    font-family: var(--font-mono);
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+
+  .demo__line--in {
+    font-size: clamp(0.9rem, 0.82rem + 0.4vw, 1.125rem);
+    color: var(--on-ink-muted);
+  }
+
+  .demo__line--out {
+    font-size: clamp(0.95rem, 0.8rem + 0.85vw, 1.375rem);
+    color: var(--on-ink);
+    margin-top: 0.7em;
+  }
+
+  .demo__slide[data-active] .demo__line--out {
+    animation: demo-arrive 380ms var(--ease) both;
+  }
+
+  @keyframes demo-arrive {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .demo__slide[data-active] .demo__line--out {
+      animation: none;
+    }
+  }
+
+  .demo__glyph {
+    color: #5c625e;
+  }
+
+  .demo__glyph--out {
+    color: var(--cyan);
+  }
+
+  .demo__q {
+    color: var(--cyan);
+  }
+
+  .demo__note {
+    margin-top: var(--s-4);
+    padding-top: var(--s-3);
+    border-top: 1px solid var(--ink-rule);
+    font-size: var(--step--1);
+    color: var(--on-ink-muted);
+  }
+
+  .demo__caption {
+    margin-top: var(--s-4);
+    font-size: var(--step--1);
+    color: var(--on-ink-muted);
+  }
+</style>
+
+<script>
+  const root = document.querySelector<HTMLElement>('[data-demo]');
+  if (root) {
+    const tabs = Array.from(
+      root.querySelectorAll<HTMLButtonElement>('[data-demo-tab]'),
+    );
+    const panels = Array.from(
+      root.querySelectorAll<HTMLElement>('[data-demo-panel]'),
+    );
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+    let index = 0;
+    let timer = 0;
+    let stopped = false;
+
+    const show = (next: number) => {
+      index = (next + panels.length) % panels.length;
+      tabs.forEach((tab, i) => {
+        tab.setAttribute('aria-selected', String(i === index));
+        tab.tabIndex = i === index ? 0 : -1;
+      });
+      panels.forEach((panel, i) => {
+        if (i === index) panel.setAttribute('data-active', 'true');
+        else panel.removeAttribute('data-active');
+      });
+    };
+
+    const stop = () => {
+      stopped = true;
+      window.clearInterval(timer);
+    };
+
+    tabs.forEach((tab, i) => {
+      tab.addEventListener('click', () => {
+        stop();
+        show(i);
+      });
+      tab.addEventListener('keydown', (event) => {
+        const delta =
+          event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
+        if (!delta) return;
+        event.preventDefault();
+        stop();
+        const next = (i + delta + tabs.length) % tabs.length;
+        tabs[next]!.focus();
+        show(next);
+      });
+    });
+
+    // Reduced motion means no autoplay at all — the controls stay available.
+    if (!reduced.matches) {
+      const tick = () => {
+        if (!stopped) show(index + 1);
+      };
+      timer = window.setInterval(tick, 4600);
+      root.addEventListener('mouseenter', () => window.clearInterval(timer));
+      root.addEventListener('mouseleave', () => {
+        if (!stopped) timer = window.setInterval(tick, 4600);
+      });
+      root.addEventListener('focusin', stop);
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) window.clearInterval(timer);
+        else if (!stopped) timer = window.setInterval(tick, 4600);
+      });
+    }
+  }
+</script>

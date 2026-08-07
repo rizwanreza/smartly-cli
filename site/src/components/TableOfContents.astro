@@ -1,0 +1,110 @@
+---
+import type { MarkdownHeading } from 'astro';
+
+interface Props {
+  headings: MarkdownHeading[];
+  editUrl: string;
+}
+
+const { headings, editUrl } = Astro.props;
+const items = headings.filter((h) => h.depth === 2 || h.depth === 3);
+---
+
+<div class="toc-wrap">
+  {
+    items.length > 0 && (
+      <nav class="toc" aria-labelledby="toc-title" data-toc>
+        <h2 class="toc__title" id="toc-title">
+          On this page
+        </h2>
+        <ul>
+          {items.map((heading) => (
+            <li class:list={[`toc__d${heading.depth}`]}>
+              <a href={`#${heading.slug}`}>{heading.text}</a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    )
+  }
+
+  <a class="toc__edit" href={editUrl} rel="noopener">
+    <svg aria-hidden="true" viewBox="0 0 16 16" width="13" height="13">
+      <path
+        fill="currentColor"
+        d="M11.013 1.427a1.75 1.75 0 0 1 2.474 0l1.086 1.086a1.75 1.75 0 0 1 0 2.474l-8.61 8.61c-.21.21-.47.364-.756.445l-3.251.93a.75.75 0 0 1-.927-.928l.929-3.25c.081-.286.235-.547.445-.758l8.61-8.61Zm1.414 1.06a.25.25 0 0 0-.354 0L10.811 3.75l1.439 1.44 1.263-1.263a.25.25 0 0 0 0-.354l-1.086-1.086ZM11.189 6.25 9.75 4.81l-6.286 6.287a.25.25 0 0 0-.064.108l-.558 1.953 1.953-.558a.253.253 0 0 0 .108-.064l6.286-6.286Z"
+      ></path>
+    </svg>
+    Edit this page on GitHub
+  </a>
+</div>
+
+<style>
+  .toc-wrap {
+    position: sticky;
+    top: var(--header-h);
+    max-height: calc(100vh - var(--header-h));
+    overflow-y: auto;
+    padding: var(--s-7) 0 var(--s-8) var(--s-5);
+    display: grid;
+    gap: var(--s-5);
+    align-content: start;
+  }
+
+  .toc__title {
+    font-family: var(--font-mono);
+    font-weight: 500;
+    font-size: var(--label);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    margin-bottom: var(--s-3);
+  }
+
+  .toc ul {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    gap: 0.3rem;
+    border-left: 1px solid var(--rule-white);
+  }
+
+  .toc a {
+    display: block;
+    padding: 0.08rem 0 0.08rem 0.75rem;
+    margin-left: -1px;
+    border-left: 2px solid transparent;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+    color: var(--ink-muted);
+    text-decoration: none;
+  }
+
+  .toc a:hover {
+    color: var(--ink);
+  }
+
+  .toc a[aria-current='true'] {
+    color: var(--ink);
+    border-left-color: var(--cyan);
+  }
+
+  .toc__d3 a {
+    padding-left: 1.6rem;
+  }
+
+  .toc__edit {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.8125rem;
+    color: var(--ink-muted);
+    text-decoration: none;
+    padding-top: var(--s-4);
+    border-top: 1px solid var(--rule-white);
+  }
+
+  .toc__edit:hover {
+    color: var(--cyan-text);
+  }
+</style>

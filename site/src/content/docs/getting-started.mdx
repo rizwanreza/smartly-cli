@@ -1,0 +1,111 @@
+---
+title: Getting started
+description: Install smartly, set an API key, and run your first request. Covers what happens on that first run, including auto-run.
+eyebrow: Start here
+lede: Install the binary, set one environment variable, and say what you want. There is no project setup and no config file to write.
+---
+
+import Callout from '../../components/Callout.astro';
+import Platform from '../../components/Platform.astro';
+import Transform from '../../components/Transform.astro';
+
+## What you need
+
+- **macOS or Linux**, running bash or zsh. Windows and PowerShell are not supported yet.
+- **Go**, to build the binary with `go install`.
+- **An `ANTHROPIC_API_KEY`**, because smartly defaults to `provider: anthropic`.
+  If you would rather use an existing Claude or ChatGPT subscription, or OpenAI,
+  see [Providers](/docs/providers/).
+
+## Install
+
+```bash
+go install github.com/rizwanreza/smartly-cli/cmd/smartly@latest
+```
+
+That puts a binary named `smartly` in your Go bin directory. If the command is
+not found afterwards, that directory is not on your `PATH`:
+
+<Platform>
+  <Fragment slot="macos">
+```bash
+export PATH="$PATH:$(go env GOPATH)/bin"   # add to ~/.zshrc
+```
+  </Fragment>
+  <Fragment slot="linux">
+```bash
+export PATH="$PATH:$(go env GOPATH)/bin"   # add to ~/.bashrc
+```
+  </Fragment>
+</Platform>
+
+A Homebrew tap is planned once the project is stable enough to tag a release.
+
+## Set your API key
+
+Out of the box smartly needs only this. No config file is required.
+
+<Platform>
+  <Fragment slot="macos">
+```bash
+export ANTHROPIC_API_KEY="sk-ant-..."   # add to ~/.zshrc
+```
+  </Fragment>
+  <Fragment slot="linux">
+```bash
+export ANTHROPIC_API_KEY="sk-ant-..."   # add to ~/.bashrc
+```
+  </Fragment>
+</Platform>
+
+## Your first command
+
+<Callout type="warn" title="This runs the command. Immediately.">
+  `execution.mode` defaults to `auto`: smartly generates one shell command and
+  runs it with no confirmation prompt, including when the command is
+  destructive. Add `--dry-run` to your first few requests until you have a feel
+  for what it produces.
+</Callout>
+
+Start with `--dry-run`, which prints the command and does nothing else:
+
+```bash
+smartly --dry-run tail logs from development.log
+```
+
+<Transform
+  request="tail logs from development.log"
+  command="tail -f development.log"
+/>
+
+Drop the flag when you want it to run:
+
+```bash
+smartly tail logs from development.log
+```
+
+## Put a gate in front of it
+
+If you would rather approve every command, switch execution mode once and forget
+about it:
+
+```bash
+smartly config init                              # writes a default config.yaml
+```
+
+Then set `execution.mode` in that file:
+
+```yaml
+execution:
+  mode: confirm
+```
+
+Now every request prints the command and waits for `[y/N]`. You can also force
+the prompt for a single call with `--confirm`, without changing any config. Both
+are covered in [Execution and safety](/docs/execution-and-safety/).
+
+## Next
+
+- [Usage](/docs/usage/) — how to phrase requests, and what smartly will and will not generate.
+- [Shell integration](/docs/shell-integration/) — required if you want a generated `cd` or `export` to affect your shell.
+- [Execution and safety](/docs/execution-and-safety/) — auto, confirm, dry-run, and what gets written to your history log.
