@@ -49,6 +49,36 @@ func TestSanitize(t *testing.T) {
 			raw:     "cd /tmp\nls -la",
 			wantErr: true,
 		},
+		{
+			name:    "lone carriage return is a display-spoofing hard reject",
+			raw:     "foo\rbar",
+			wantErr: true,
+		},
+		{
+			name:    "ansi escape sequence is a hard reject",
+			raw:     "foo\x1b[31mbar",
+			wantErr: true,
+		},
+		{
+			name: "tab is legitimate whitespace",
+			raw:  "a\tb",
+			want: "a\tb",
+		},
+		{
+			name: "single-backtick inline wrap",
+			raw:  "`ls -la`",
+			want: "ls -la",
+		},
+		{
+			name: "bare triple-backtick single-line wrap",
+			raw:  "```ls -la```",
+			want: "ls -la",
+		},
+		{
+			name: "mid-command backtick is left alone",
+			raw:  "echo `date` now",
+			want: "echo `date` now",
+		},
 	}
 
 	for _, tt := range tests {
