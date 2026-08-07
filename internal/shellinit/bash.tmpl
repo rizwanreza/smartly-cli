@@ -6,6 +6,9 @@ smartly() {
   if [ $__smartly_rc -ne 0 ]; then
     return $__smartly_rc
   fi
+  if [ -z "$__smartly_out" ]; then
+    return 0
+  fi
   eval "$__smartly_out"
   local __smartly_exit=$?
   SMARTLY_REQUEST_ID="$__smartly_id" command smartly --record-exit "$__smartly_exit" >/dev/null 2>&1

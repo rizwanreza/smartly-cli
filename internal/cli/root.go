@@ -158,7 +158,19 @@ func runRoot(cmd *cobra.Command, args []string) error {
 	rec.Command = command
 
 	if dryRunFlag {
-		fmt.Fprintln(os.Stdout, commandStyle.Render(command))
+		// The shell wrapper always invokes us with --print-only and
+		// unconditionally evals whatever we write to stdout. If the preview
+		// went to stdout here, --dry-run would have the wrapper execute the
+		// very command it was asked only to show. So when printOnlyFlag is
+		// also set, the preview goes to stderr (matching the "$ "-preview at
+		// the exec path below) and stdout stays empty. Direct invocations
+		// (no --print-only) keep printing to stdout so `smartly --dry-run
+		// ... | pbcopy` keeps working.
+		if printOnlyFlag {
+			fmt.Fprintln(os.Stderr, commandStyle.Render(command))
+		} else {
+			fmt.Fprintln(os.Stdout, commandStyle.Render(command))
+		}
 		return fail(logging.OutcomeDeclined, "dry_run", nil)
 	}
 
