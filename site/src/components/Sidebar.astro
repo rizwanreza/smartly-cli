@@ -1,0 +1,97 @@
+---
+import { withBase, isActive } from '../lib/url';
+import { docsNav, docHref } from '../lib/nav';
+
+const path = Astro.url.pathname;
+---
+
+<nav class="sidebar" aria-label="Documentation">
+  {
+    docsNav.map((group) => (
+      <div class="sidebar__group">
+        <h2 class="sidebar__title">{group.label}</h2>
+        <ul>
+          {group.items.map((item) => {
+            const href = withBase(docHref(item.slug));
+            const active = isActive(path, href);
+            return (
+              <li>
+                <a href={href} aria-current={active ? 'page' : undefined}>
+                  {item.label}
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    ))
+  }
+  <div class="sidebar__group">
+    <h2 class="sidebar__title">Reference</h2>
+    <ul>
+      <li>
+        <a
+          href={withBase('/brand/')}
+          aria-current={isActive(path, withBase('/brand/')) ? 'page' : undefined}
+          >Brand guidelines</a
+        >
+      </li>
+    </ul>
+  </div>
+</nav>
+
+<style>
+  .sidebar {
+    position: sticky;
+    top: var(--header-h);
+    max-height: calc(100vh - var(--header-h));
+    overflow-y: auto;
+    padding: var(--s-7) var(--s-5) var(--s-8) 0;
+    border-right: 1px solid var(--rule-white);
+  }
+
+  .sidebar__group + .sidebar__group {
+    margin-top: var(--s-5);
+  }
+
+  .sidebar__title {
+    font-family: var(--font-mono);
+    font-weight: 500;
+    font-size: var(--label);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    margin-bottom: var(--s-2);
+    padding-left: 0.7rem;
+  }
+
+  .sidebar ul {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    gap: 1px;
+  }
+
+  .sidebar a {
+    display: block;
+    padding: 0.32rem 0.7rem;
+    font-size: 0.9375rem;
+    text-decoration: none;
+    color: var(--ink-muted);
+    border-left: 2px solid transparent;
+    border-radius: 0 var(--radius) var(--radius) 0;
+    transition: color var(--dur) var(--ease), background var(--dur) var(--ease);
+  }
+
+  .sidebar a:hover {
+    color: var(--ink);
+    background: var(--paper);
+  }
+
+  .sidebar a[aria-current='page'] {
+    color: var(--ink);
+    font-weight: 600;
+    border-left-color: var(--cyan);
+    background: var(--paper);
+  }
+</style>

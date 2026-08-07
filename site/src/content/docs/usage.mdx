@@ -1,0 +1,93 @@
+---
+title: Usage
+description: How to phrase a request, what smartly generates, and the per-invocation flags that change provider, model, context or execution mode.
+eyebrow: Start here
+lede: One sentence in, one shell command out. Everything else on this page is about the edges of that contract.
+---
+
+import Callout from '../../components/Callout.astro';
+import Transform from '../../components/Transform.astro';
+
+## The shape of a request
+
+```bash
+smartly <your request in plain English>
+```
+
+No quoting required — everything after the flags is the sentence. smartly
+generates one shell command and, by default, runs it immediately.
+
+<Transform
+  request="remove all worktrees except main"
+  command="git worktree remove /Users/you/project-fix"
+/>
+
+<Transform
+  request="find all occurrences of git and replace with svn"
+  command="find . -type f -exec sed -i '' 's/git/svn/g' {} +"
+/>
+
+## What you get
+
+**One command line.** Pipes, `&&` and redirects inside that line are fine.
+smartly will not produce a multi-step script — if a request genuinely needs
+several steps, ask for the steps one at a time.
+
+**A command for your operating system.** smartly accounts for GNU (Linux) versus
+BSD (macOS) userland differences, so the same request produces `sed -i ''` on
+macOS and `sed -i` on Linux.
+
+**A command grounded in where you are.** By default smartly sends a capped
+directory listing plus your git branch, status and worktrees, so a request like
+"remove all worktrees except main" resolves against what is actually there. See
+[Context](/docs/context/) for the three levels and what each one sends.
+
+<Callout type="warn" title="The command runs unless you say otherwise.">
+  With the default `execution.mode: auto` there is no confirmation prompt. Use
+  `--dry-run` to see a command without running it, `--confirm` to be asked, or
+  set `execution.mode: confirm` to be asked every time. See [Execution and
+  safety](/docs/execution-and-safety/).
+</Callout>
+
+## Per-invocation flags
+
+These override configuration for a single call and change nothing on disk.
+
+| Flag | Effect |
+| --- | --- |
+| `--provider <name>` | Use `anthropic`, `openai`, `claude-cli` or `codex-cli` for this call. |
+| `--model <name>` | Override the model for whichever provider is active. |
+| `--context <level>` | Use `none`, `light` or `full` context for this call. |
+| `--confirm` | Force the `[y/N]` prompt, whatever the configured mode. |
+| `-y`, `--yes` | Force auto-run, whatever the configured mode. |
+| `--dry-run` | Print the command. Ask nothing, run nothing. |
+
+`--confirm` and `-y`/`--yes` are mutually exclusive.
+
+```bash
+smartly --provider codex-cli --context none show me disk usage by directory
+smartly --dry-run compress the logs directory
+smartly --confirm delete every merged branch
+```
+
+## Trying a provider without committing to it
+
+`--provider` and `--model` are the cheapest way to compare backends, because
+neither writes to your config file:
+
+```bash
+smartly --provider claude-cli --model haiku --dry-run list the largest files here
+```
+
+If that provider needs setup you have not done yet, smartly fails with an
+actionable error rather than quietly falling back to another one. See
+[Providers](/docs/providers/).
+
+## Limitations
+
+- One shell command line per invocation. No multi-step scripts.
+- bash and zsh on Linux and macOS. Windows and PowerShell are not supported yet.
+- The OpenAI provider ships with no default model — you must set
+  `providers.openai.model` yourself.
+- `claude-cli` and `codex-cli` need the respective CLI installed and separately
+  logged in, and their error classification is best-effort.

@@ -1,0 +1,108 @@
+---
+import type { MarkdownHeading } from 'astro';
+import Base from './Base.astro';
+import Sidebar from '../components/Sidebar.astro';
+import TableOfContents from '../components/TableOfContents.astro';
+import PrevNext from '../components/PrevNext.astro';
+import '../styles/prose.css';
+
+interface Props {
+  title: string;
+  description: string;
+  eyebrow: string;
+  lede: string;
+  slug: string;
+  headings: MarkdownHeading[];
+  /** Path of the source file relative to `site/`, for the edit link. */
+  editPath: string;
+}
+
+const { title, description, eyebrow, lede, slug, headings, editPath } =
+  Astro.props;
+
+const { REPO_EDIT_URL } = await import('../../site.config.mjs');
+const editUrl = `${REPO_EDIT_URL}/${editPath}`;
+---
+
+<Base title={title} description={description}>
+  <div class="doc">
+    <div class="doc__sidebar">
+      <Sidebar />
+    </div>
+
+    <article class="doc__main">
+      <header class="doc__header">
+        <p class="eyebrow">{eyebrow}</p>
+        <h1>{title}</h1>
+        <p class="doc__lede">{lede}</p>
+      </header>
+
+      <div class="prose" data-copyable>
+        <slot />
+      </div>
+
+      <PrevNext slug={slug} />
+    </article>
+
+    <div class="doc__toc">
+      <TableOfContents headings={headings} editUrl={editUrl} />
+    </div>
+  </div>
+</Base>
+
+<style>
+  .doc {
+    max-width: 90rem;
+    margin-inline: auto;
+    padding-inline: var(--s-5);
+    display: grid;
+    gap: 0;
+  }
+
+  .doc__sidebar,
+  .doc__toc {
+    display: none;
+  }
+
+  .doc__main {
+    min-width: 0;
+    padding-block: var(--s-6) var(--s-7);
+  }
+
+  .doc__header {
+    padding-bottom: var(--s-5);
+    border-bottom: 1px solid var(--rule-white);
+    margin-bottom: var(--s-6);
+    max-width: var(--measure);
+  }
+
+  .doc__lede {
+    margin-top: var(--s-3);
+    font-size: var(--step-1);
+    line-height: 1.55;
+    color: var(--ink-muted);
+  }
+
+  @media (min-width: 64rem) {
+    .doc {
+      grid-template-columns: 15rem minmax(0, 1fr);
+      gap: var(--s-7);
+      padding-inline: var(--s-6);
+    }
+    .doc__sidebar {
+      display: block;
+    }
+    .doc__main {
+      padding-block: var(--s-7) var(--s-8);
+    }
+  }
+
+  @media (min-width: 84rem) {
+    .doc {
+      grid-template-columns: 15rem minmax(0, 1fr) 15rem;
+    }
+    .doc__toc {
+      display: block;
+    }
+  }
+</style>

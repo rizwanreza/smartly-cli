@@ -1,0 +1,133 @@
+---
+title: Providers
+description: The four smartly backends — Anthropic, OpenAI, Claude CLI and Codex CLI — what each one needs, and the real tradeoffs of the CLI-backed ones.
+eyebrow: Configure
+lede: Two providers talk to an API with a key. Two shell out to a CLI you are already logged into. They are not interchangeable.
+---
+
+import Callout from '../../components/Callout.astro';
+
+## The four
+
+| Provider | Authentication | Model |
+| --- | --- | --- |
+| `anthropic` | `ANTHROPIC_API_KEY` | `claude-opus-5` by default |
+| `openai` | `OPENAI_API_KEY` | none shipped — you must set one |
+| `claude-cli` | Your logged-in `claude` session | required in config |
+| `codex-cli` | Your logged-in `codex` session | optional |
+
+Switch with the config file:
+
+```yaml
+provider: openai
+
+providers:
+  openai:
+    model: gpt-4.1-mini
+```
+
+…or for one call only:
+
+```bash
+smartly --provider claude-cli --model haiku --dry-run list the largest files here
+```
+
+## API-backed providers
+
+`anthropic` and `openai` use the official SDKs and a billed API key. They are
+the fast path: one HTTP request, precise typed errors, no extra processes.
+
+`anthropic` is the default and needs nothing but `ANTHROPIC_API_KEY` in your
+environment. `openai` ships **no default model**, so setting
+`providers.openai.model` is mandatory before it will run.
+
+Both accept an optional `base_url`, for a self-hosted or proxied endpoint —
+Azure OpenAI, vLLM, LM Studio and similar.
+
+```yaml
+providers:
+  openai:
+    model: gpt-4.1-mini
+    base_url: "https://my-azure-endpoint.openai.azure.com"
+```
+
+## CLI-backed providers
+
+If you already pay for Claude Pro/Max or ChatGPT Plus/Pro, `claude-cli` and
+`codex-cli` let smartly shell out to your own logged-in session instead of a
+separately billed API key.
+
+Log in yourself first — smartly does not manage that login state:
+
+```bash
+claude login    # for provider: claude-cli
+codex login     # for provider: codex-cli
+```
+
+If the binary is missing or the session is not authenticated, smartly hard-fails
+with an actionable error rather than silently falling back to an API key.
+
+### The tradeoffs
+
+These are real and worth knowing before you switch:
+
+- **Slower.** Every request spawns a full CLI process, not a lightweight API
+  call.
+- **Heuristic error classification.** Without HTTP status codes, failures
+  (authentication versus anything else) are detected from the exit code plus
+  substring-matching on the CLI's own text output, not a precise typed error
+  like the SDK-based providers use.
+
+### `claude-cli`
+
+Fully tool-disabled and effectively single-shot. It always runs with
+`--safe-mode` — OAuth authentication without loading your `CLAUDE.md`, hooks,
+plugins or MCP servers — and `--tools ""`, meaning no tool access at all. Asked
+to run a command anyway, it declines in text.
+
+`model` is required in config for this reason: omitting it triggers an internal
+multi-model routing step that makes it unclear which model actually produced the
+result.
+
+```yaml
+provider: claude-cli
+
+providers:
+  claude-cli:
+    model: haiku
+    binary: claude
+    max_budget_usd: 0.50
+```
+
+### `codex-cli`
+
+Sandboxed but still agentic. There is no flag to disable tool and shell
+execution entirely, so it always runs with `--sandbox read-only` — a real
+OS-enforced boundary. The model may still attempt sandboxed read-only shell
+commands while composing its answer, and occasionally its response narrates a
+failed self-attempted command rather than being a clean answer.
+
+```yaml
+provider: codex-cli
+
+providers:
+  codex-cli:
+    model: ""     # optional; omitted if unset
+    binary: codex
+```
+
+<Callout type="warn" title="One sanitizer, no salvage.">
+  Whatever the provider returns, smartly's strict single-line sanitizer is the
+  backstop: a response that is not one clean command line is rejected rather
+  than guessed at. That protects against a messy response, not against a clean
+  response that happens to be a destructive command.
+</Callout>
+
+## Choosing
+
+- You want it fast and you have an API key → `anthropic` (or `openai` with a
+  model set).
+- You already pay for a Claude or ChatGPT subscription and would rather not add
+  API billing → `claude-cli` or `codex-cli`, accepting the extra latency.
+- You want the strictest generation behaviour of the two CLI options →
+  `claude-cli`, which has no tool access at all.

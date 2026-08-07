@@ -1,0 +1,116 @@
+---
+/**
+ * macOS / Linux tabs, for the places where the command genuinely differs.
+ * The choice is shared across every Platform block on the page and remembered
+ * in localStorage, so a reader picks their OS once.
+ *
+ * Works without JavaScript: both panels are rendered, the macOS one visible.
+ */
+const id = `platform-${Math.random().toString(36).slice(2, 9)}`;
+
+const tabs = [
+  { key: 'macos', label: 'macOS' },
+  { key: 'linux', label: 'Linux' },
+] as const;
+---
+
+<div class="platform" data-tabs="platform">
+  <div class="platform__tabs" role="tablist" aria-label="Operating system">
+    {
+      tabs.map((tab, i) => (
+        <button
+          type="button"
+          role="tab"
+          id={`${id}-tab-${tab.key}`}
+          data-key={tab.key}
+          aria-selected={i === 0 ? 'true' : 'false'}
+          aria-controls={`${id}-panel-${tab.key}`}
+          tabindex={i === 0 ? 0 : -1}
+        >
+          {tab.label}
+        </button>
+      ))
+    }
+  </div>
+
+  <div
+    role="tabpanel"
+    id={`${id}-panel-macos`}
+    data-key="macos"
+    aria-labelledby={`${id}-tab-macos`}
+    tabindex={0}
+  >
+    <slot name="macos" />
+  </div>
+
+  <div
+    role="tabpanel"
+    id={`${id}-panel-linux`}
+    data-key="linux"
+    aria-labelledby={`${id}-tab-linux`}
+    tabindex={0}
+    hidden
+  >
+    <slot name="linux" />
+  </div>
+</div>
+
+<style>
+  .platform {
+    margin-block: var(--s-5);
+  }
+
+  .platform__tabs {
+    display: flex;
+    gap: 0.15rem;
+    border-bottom: 1px solid var(--rule-white);
+  }
+
+  .platform__tabs button {
+    position: relative;
+    background: none;
+    border: 0;
+    padding: 0.45rem 0.85rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    cursor: pointer;
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
+
+  .platform__tabs button:hover {
+    color: var(--ink);
+    background: var(--paper);
+  }
+
+  .platform__tabs button[aria-selected='true'] {
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  .platform__tabs button[aria-selected='true']::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 2px;
+    background: var(--cyan);
+  }
+
+  .platform [role='tabpanel'] :global(pre) {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    border-top: 0;
+  }
+
+  .platform [role='tabpanel'] :global(.code-block) {
+    margin-top: 0;
+  }
+
+  .platform [role='tabpanel']:focus-visible {
+    outline-offset: 4px;
+  }
+</style>

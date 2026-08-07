@@ -1,0 +1,216 @@
+---
+import { withBase } from '../lib/url';
+
+const indexUrl = withBase('/search-index.json');
+---
+
+<div class="search" data-search hidden data-index={indexUrl}>
+  <div class="search__scrim" data-search-close></div>
+  <div
+    class="search__panel"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Search documentation"
+  >
+    <div class="search__field">
+      <svg aria-hidden="true" viewBox="0 0 16 16" width="15" height="15">
+        <circle
+          cx="7"
+          cy="7"
+          r="4.6"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.6"></circle>
+        <path
+          d="M10.5 10.5 14 14"
+          stroke="currentColor"
+          stroke-width="1.6"
+          stroke-linecap="round"></path>
+      </svg>
+      <input
+        type="search"
+        id="search-input"
+        data-search-input
+        placeholder="Search the documentation"
+        autocomplete="off"
+        spellcheck="false"
+        role="combobox"
+        aria-expanded="false"
+        aria-controls="search-results"
+        aria-autocomplete="list"
+      />
+      <button type="button" class="search__esc mono" data-search-close>Esc</button
+      >
+    </div>
+
+    <ul
+      class="search__results"
+      id="search-results"
+      role="listbox"
+      aria-label="Search results"
+      data-search-results
+    >
+    </ul>
+
+    <p class="search__empty mono" data-search-empty>
+      Type to search. Enter opens, arrows move.
+    </p>
+  </div>
+</div>
+
+<style>
+  .search {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+  }
+
+  .search[hidden] {
+    display: none;
+  }
+
+  .search__scrim {
+    position: absolute;
+    inset: 0;
+    background: rgba(21, 23, 22, 0.42);
+    animation: search-fade var(--dur) var(--ease);
+  }
+
+  @keyframes search-fade {
+    from {
+      opacity: 0;
+    }
+  }
+
+  .search__panel {
+    position: relative;
+    width: min(38rem, calc(100vw - 2rem));
+    margin: clamp(3rem, 10vh, 7rem) auto 0;
+    background: var(--white);
+    border: 1px solid var(--rule-strong);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 24px 60px -20px rgba(21, 23, 22, 0.35);
+    overflow: hidden;
+  }
+
+  .search__field {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+    padding: var(--s-3) var(--s-4);
+    border-bottom: 1px solid var(--rule-white);
+    color: var(--ink-muted);
+  }
+
+  .search__field input {
+    flex: 1;
+    border: 0;
+    outline: none;
+    background: none;
+    font-size: var(--step-0);
+    padding-block: 0.35rem;
+    color: var(--ink);
+  }
+
+  /* --ink-faint is 3.25:1 and decorative-only; placeholder text is functional. */
+  .search__field input::placeholder {
+    color: var(--ink-muted);
+  }
+
+  .search__field input:focus-visible {
+    outline: none;
+    box-shadow: none;
+  }
+
+  .search__esc {
+    font-size: 0.6875rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 0.22rem 0.42rem;
+    cursor: pointer;
+  }
+
+  .search__results {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-height: min(26rem, 52vh);
+    overflow-y: auto;
+  }
+
+  .search__results:empty {
+    display: none;
+  }
+
+  /* Result rows are built by script, so they never carry Astro's scope
+     attribute — these rules have to be global to reach them. */
+  .search__results :global(a) {
+    display: block;
+    padding: 0.6rem var(--s-4);
+    text-decoration: none;
+    border-bottom: 1px solid var(--rule-white);
+  }
+
+  .search__results :global(li:last-child a) {
+    border-bottom: 0;
+  }
+
+  .search__results :global(a:hover),
+  .search__results :global([aria-selected='true'] a) {
+    background: var(--paper);
+    color: var(--ink);
+  }
+
+  .search__results :global([aria-selected='true'] a) {
+    box-shadow: inset 2px 0 0 var(--cyan);
+  }
+
+  .search__results :global(.search__crumb) {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    margin-bottom: 0.15rem;
+  }
+
+  .search__results :global(.search__title) {
+    display: block;
+    font-weight: 500;
+    font-size: 0.9375rem;
+    color: var(--ink);
+    letter-spacing: -0.012em;
+  }
+
+  .search__results :global(.search__snippet) {
+    display: block;
+    font-size: 0.8125rem;
+    color: var(--ink-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .search__results :global(mark) {
+    background: var(--cyan-dim);
+    color: inherit;
+    border-radius: 2px;
+    padding: 0 0.1em;
+  }
+
+  .search__empty {
+    padding: var(--s-4);
+    font-size: var(--step--1);
+    color: var(--ink-muted);
+    border-top: 1px solid var(--rule-white);
+  }
+
+  .search__empty[hidden] {
+    display: none;
+  }
+</style>

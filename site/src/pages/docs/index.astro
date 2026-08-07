@@ -1,0 +1,23 @@
+---
+// /docs/ has no page of its own — "Getting started" is the entry point.
+// Written as an explicit meta-refresh page rather than Astro's `redirects`
+// config so the destination goes through withBase() and stays correct under a
+// project-pages sub-path.
+import { withBase } from '../../lib/url';
+
+const target = withBase('/docs/getting-started/');
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Documentation — smartly</title>
+    <meta name="robots" content="noindex" />
+    <meta http-equiv="refresh" content={`0; url=${target}`} />
+    <link rel="canonical" href={new URL(target, Astro.site).href} />
+  </head>
+  <body>
+    <p>Redirecting to <a href={target}>Getting started</a>.</p>
+  </body>
+</html>

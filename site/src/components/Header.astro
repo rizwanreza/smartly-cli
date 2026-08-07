@@ -1,0 +1,270 @@
+---
+import { withBase, isActive } from '../lib/url';
+import { REPO_URL } from '../../site.config.mjs';
+
+const path = Astro.url.pathname;
+
+const links = [
+  { href: withBase('/docs/getting-started/'), label: 'Docs', match: withBase('/docs/') },
+  { href: withBase('/brand/'), label: 'Brand', match: withBase('/brand/') },
+];
+---
+
+<header class="site-header">
+  <div class="site-header__inner">
+    <a class="site-header__logo" href={withBase('/')}>
+      <img
+        src={withBase('/brand/smartly-logo-light.svg')}
+        alt="smartly"
+        width="760"
+        height="240"
+      />
+    </a>
+
+    <nav class="site-header__nav" aria-label="Main">
+      {
+        links.map((link) => (
+          <a
+            href={link.href}
+            class="site-header__link"
+            aria-current={isActive(path, link.match, true) ? 'page' : undefined}
+          >
+            {link.label}
+          </a>
+        ))
+      }
+    </nav>
+
+    <div class="site-header__tools">
+      <button
+        type="button"
+        class="search-trigger"
+        data-search-open
+        aria-haspopup="dialog"
+        aria-label="Search the documentation"
+      >
+        <svg aria-hidden="true" viewBox="0 0 16 16" width="14" height="14">
+          <circle
+            cx="7"
+            cy="7"
+            r="4.6"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"></circle>
+          <path
+            d="M10.5 10.5 14 14"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"></path>
+        </svg>
+        <span class="search-trigger__label">Search docs</span>
+        <kbd class="search-trigger__kbd" aria-hidden="true">/</kbd>
+      </button>
+
+      <a class="site-header__gh" href={REPO_URL} rel="noopener">
+        <svg aria-hidden="true" viewBox="0 0 16 16" width="17" height="17">
+          <path
+            fill="currentColor"
+            d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"
+          ></path>
+        </svg>
+        <span class="sr-only">smartly on GitHub</span>
+      </a>
+
+      <button
+        type="button"
+        class="drawer-trigger"
+        data-drawer-open
+        aria-expanded="false"
+        aria-controls="docs-drawer"
+      >
+        <span class="drawer-trigger__bars" aria-hidden="true"></span>
+        <span class="sr-only">Open navigation</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<style>
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 60;
+    background: color-mix(in srgb, var(--white) 88%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--rule-white);
+  }
+
+  .site-header__inner {
+    height: var(--header-h);
+    max-width: 90rem;
+    margin-inline: auto;
+    padding-inline: var(--s-5);
+    display: flex;
+    align-items: center;
+    gap: var(--s-5);
+  }
+
+  .site-header__logo {
+    display: block;
+    text-decoration: none;
+    flex: none;
+    line-height: 0;
+  }
+
+  .site-header__logo img {
+    height: 26px;
+    width: auto;
+  }
+
+  .site-header__nav {
+    display: none;
+    align-items: center;
+    gap: var(--s-5);
+    margin-right: auto;
+  }
+
+  .site-header__link {
+    font-size: 0.9375rem;
+    font-weight: 500;
+    text-decoration: none;
+    color: var(--ink-muted);
+    padding-block: 0.4rem;
+    position: relative;
+  }
+
+  .site-header__link:hover {
+    color: var(--ink);
+  }
+
+  .site-header__link[aria-current='page'] {
+    color: var(--ink);
+  }
+
+  .site-header__link[aria-current='page']::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -2px;
+    height: 2px;
+    background: var(--cyan);
+  }
+
+  .site-header__tools {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    margin-left: auto;
+  }
+
+  /* Icon-only on a phone, labelled from 40rem up. Search is never hidden — the
+     drawer is navigation, not a substitute for it. */
+  .search-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    color: var(--ink-muted);
+    padding: 0.36rem 0.5rem 0.36rem 0.6rem;
+    font-size: 0.8125rem;
+    cursor: pointer;
+    transition: border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+  }
+
+  .search-trigger:hover {
+    border-color: var(--ink);
+    color: var(--ink);
+  }
+
+  .search-trigger__label {
+    display: none;
+    min-width: 6.5rem;
+    text-align: left;
+  }
+
+  .search-trigger__kbd {
+    display: none;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    line-height: 1;
+    padding: 0.2rem 0.34rem;
+    border: 1px solid var(--rule-strong);
+    border-radius: 3px;
+    background: var(--white);
+  }
+
+  .site-header__gh {
+    display: inline-flex;
+    padding: 0.4rem;
+    border-radius: var(--radius);
+    color: var(--ink-muted);
+    text-decoration: none;
+  }
+
+  .site-header__gh:hover {
+    color: var(--ink);
+    background: var(--paper);
+  }
+
+  .drawer-trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    background: transparent;
+    border: 1px solid var(--rule-white);
+    border-radius: var(--radius);
+    cursor: pointer;
+  }
+
+  .drawer-trigger__bars,
+  .drawer-trigger__bars::before,
+  .drawer-trigger__bars::after {
+    display: block;
+    width: 15px;
+    height: 1.5px;
+    background: var(--ink);
+    content: '';
+  }
+
+  .drawer-trigger__bars {
+    position: relative;
+  }
+
+  .drawer-trigger__bars::before {
+    position: absolute;
+    top: -5px;
+  }
+
+  .drawer-trigger__bars::after {
+    position: absolute;
+    top: 5px;
+    background: var(--cyan-deep);
+    width: 9px;
+  }
+
+  @media (min-width: 40rem) {
+    .site-header__nav {
+      display: flex;
+    }
+    .search-trigger__label {
+      display: block;
+    }
+    .search-trigger__kbd {
+      display: inline-block;
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .drawer-trigger {
+      display: none;
+    }
+    .site-header__inner {
+      padding-inline: var(--s-6);
+    }
+  }
+</style>

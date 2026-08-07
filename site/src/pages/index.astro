@@ -1,0 +1,488 @@
+---
+import Base from '../layouts/Base.astro';
+import TerminalDemo from '../components/TerminalDemo.astro';
+import InstallBlock from '../components/InstallBlock.astro';
+import { withBase } from '../lib/url';
+import { REPO_URL } from '../../site.config.mjs';
+
+// Bodies are authored here, so backticks are turned into <code> rather than
+// pulling a Markdown renderer in for five sentences.
+const capabilities = [
+  {
+    key: 'english → command',
+    title: 'One sentence in, one command out',
+    body: 'Describe the result. smartly returns a single executable shell command — pipes, `&&` and redirects allowed, multi-step scripts never.',
+  },
+  {
+    key: 'macos + linux',
+    title: 'Knows which userland it is on',
+    body: "It accounts for GNU versus BSD differences, so the same request produces `sed -i ''` on macOS and `sed -i` on Linux.",
+  },
+  {
+    key: 'dir + git',
+    title: 'Reads the room',
+    body: 'By default it sends a capped directory listing plus your git branch, status and worktrees, so “all worktrees except main” resolves against what is actually there.',
+  },
+  {
+    key: 'four providers',
+    title: 'Your model, your billing',
+    body: 'Anthropic and OpenAI by API key, or your own logged-in `claude` / `codex` CLI session if you already pay for a subscription.',
+  },
+  {
+    key: 'auto · confirm · dry-run',
+    title: 'Three ways to run it',
+    body: 'Run immediately, ask `[y/N]` first, or print the command and do nothing. `auto` is the default.',
+  },
+];
+
+const code = (value: string) =>
+  value.replace(/`([^`]+)`/g, (_, inner) => `<code>${inner}</code>`);
+
+const providers = [
+  {
+    name: 'anthropic',
+    auth: 'ANTHROPIC_API_KEY',
+    note: 'The default. Nothing to configure beyond the key.',
+  },
+  {
+    name: 'openai',
+    auth: 'OPENAI_API_KEY',
+    note: 'Ships no default model — set providers.openai.model yourself.',
+  },
+  {
+    name: 'claude-cli',
+    auth: 'Your logged-in claude session',
+    note: 'No tool access at all. Model is required in config.',
+  },
+  {
+    name: 'codex-cli',
+    auth: 'Your logged-in codex session',
+    note: 'Runs --sandbox read-only, but is still agentic while composing.',
+  },
+];
+---
+
+<Base
+  title="smartly — tell your shell what you mean"
+  description="smartly turns a plain English sentence into one executable shell command. macOS and Linux, directory and git aware, four model providers, and auto-run by default."
+  suffix={false}
+>
+  <!-- ==================================================== hero -->
+  <section class="hero">
+    <div class="shell hero__inner">
+      <img
+        class="hero__logo"
+        src={withBase('/brand/smartly-logo-light.svg')}
+        alt="smartly"
+        width="760"
+        height="240"
+        fetchpriority="high"
+      />
+
+      <h1 class="hero__title">Tell your shell<br />what you mean.</h1>
+
+      <p class="hero__sub">You know what. Smartly knows how.</p>
+
+      <p class="hero__body">
+        smartly sends one plain English sentence to an LLM, sanitizes the reply
+        into a single shell command, and runs it. For people who know what they
+        want to do and would rather not remember the exact flags.
+      </p>
+
+      <div class="hero__install">
+        <p class="hero__install-label mono">Install</p>
+        <InstallBlock size="lg" />
+      </div>
+
+      <div class="hero__cta">
+        <a class="btn btn--primary" href={withBase('/docs/getting-started/')}>
+          Get started <span class="btn__arrow" aria-hidden="true">→</span>
+        </a>
+        <a class="btn btn--ghost" href={REPO_URL} rel="noopener">View on GitHub</a>
+      </div>
+    </div>
+  </section>
+
+  <TerminalDemo />
+
+  <!-- ============================================ capabilities -->
+  <section class="band caps" aria-labelledby="caps-title">
+    <div class="shell">
+      <p class="eyebrow">What it does</p>
+      <h2 id="caps-title" class="caps__title">
+        Commands without the ceremony.
+      </h2>
+
+      <dl class="caps__list">
+        {
+          capabilities.map((cap) => (
+            <div class="caps__row">
+              <dt class="caps__key mono">{cap.key}</dt>
+              <dd class="caps__def">
+                <h3 class="caps__name">{cap.title}</h3>
+                <p set:html={code(cap.body)} />
+              </dd>
+            </div>
+          ))
+        }
+      </dl>
+    </div>
+  </section>
+
+  <!-- ================================================== safety -->
+  <section class="band band--paper safety" id="safety" aria-labelledby="safety-title">
+    <div class="shell safety__grid">
+      <div class="safety__lead">
+        <p class="eyebrow">Before you install it</p>
+        <h2 id="safety-title" class="safety__title">
+          Auto-run is the default.
+        </h2>
+        <p class="safety__body safety__body--key">
+          smartly generates a command and runs it immediately, with no
+          confirmation prompt — including when that command is destructive.
+          There is no blocklist and no danger detector. Its sanitizer enforces
+          that the model returned exactly one clean command line; it makes no
+          judgement about what that line does.
+        </p>
+        <p class="safety__body">
+          That is the product working as intended, and it is the setting most
+          worth reconsidering on a machine where a wrong <code>rm</code> costs you
+          something. Two ways to change it:
+        </p>
+        <p>
+          <a href={withBase('/docs/execution-and-safety/')}
+            >Read the full execution and safety page</a
+          >
+        </p>
+      </div>
+
+      <div class="safety__ways">
+        <div class="safety__way">
+          <p class="safety__way-title">
+            <span class="safety__flag mono">confirm</span> Ask me every time
+          </p>
+          <p class="safety__way-body">
+            Prints the command and waits for <code>[y/N]</code>. Reads
+            <code>/dev/tty</code> directly, and fails closed when there is no
+            terminal.
+          </p>
+          <div data-copyable>
+            <pre data-copy-label="config snippet"><code>{`# ~/.config/smartly/config.yaml
+execution:
+  mode: confirm`}</code></pre>
+          </div>
+        </div>
+
+        <div class="safety__way">
+          <p class="safety__way-title">
+            <span class="safety__flag mono">--dry-run</span> Just show me
+          </p>
+          <p class="safety__way-body">
+            Prints the command and does nothing else. The right flag for a
+            phrasing you are not sure about yet.
+          </p>
+          <div data-copyable>
+            <pre
+              data-copy-label="dry run command"><code>smartly --dry-run remove every merged branch</code></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =============================================== providers -->
+  <section class="band providers" aria-labelledby="providers-title">
+    <div class="shell">
+      <p class="eyebrow">Providers</p>
+      <h2 id="providers-title" class="providers__title">
+        Four backends. Two ways to pay for them.
+      </h2>
+      <p class="providers__lede lede">
+        Two providers call an API with a key. Two shell out to a CLI you are
+        already logged into — slower, but no second bill.
+      </p>
+
+      <div class="table-scroll providers__table">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Provider</th>
+              <th scope="col">Authentication</th>
+              <th scope="col">Worth knowing</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              providers.map((provider) => (
+                <tr>
+                  <th scope="row">
+                    <code>{provider.name}</code>
+                  </th>
+                  <td>{provider.auth}</td>
+                  <td>{provider.note}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <p class="providers__foot">
+        <a href={withBase('/docs/providers/')}>Provider setup and tradeoffs →</a>
+      </p>
+    </div>
+  </section>
+
+  <!-- ================================================ final cta -->
+  <section class="band band--paper final" aria-labelledby="final-title">
+    <div class="shell final__inner">
+      <h2 id="final-title" class="final__title">Describe the result.<br />Skip the flag archaeology.</h2>
+      <div class="final__install">
+        <InstallBlock size="lg" />
+      </div>
+      <div class="final__cta">
+        <a class="btn btn--primary" href={withBase('/docs/getting-started/')}>
+          Get started <span class="btn__arrow" aria-hidden="true">→</span>
+        </a>
+        <a class="btn btn--ghost" href={REPO_URL} rel="noopener">View on GitHub</a>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  /* ---------------------------------------------------------------- hero */
+  .hero {
+    padding-block: clamp(var(--s-7), 6vw, var(--s-9)) clamp(var(--s-8), 7vw, var(--s-10));
+  }
+
+  .hero__logo {
+    height: clamp(38px, 6vw, 54px);
+    width: auto;
+    margin-bottom: clamp(var(--s-5), 4vw, var(--s-7));
+  }
+
+  .hero__title {
+    font-size: var(--step-5);
+    letter-spacing: var(--tracking-display);
+    line-height: 0.96;
+    max-width: 15ch;
+  }
+
+  .hero__sub {
+    margin-top: var(--s-5);
+    font-family: var(--font-mono);
+    font-size: clamp(0.875rem, 0.8rem + 0.32vw, 1.0625rem);
+    color: var(--cyan-text);
+    letter-spacing: -0.01em;
+  }
+
+  .hero__body {
+    margin-top: var(--s-5);
+    max-width: 52ch;
+    font-size: var(--step-1);
+    line-height: 1.55;
+    color: var(--ink-muted);
+  }
+
+  .hero__install {
+    margin-top: clamp(var(--s-6), 4vw, var(--s-7));
+    max-width: 40rem;
+  }
+
+  .hero__install-label {
+    font-size: var(--label);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    margin-bottom: var(--s-2);
+  }
+
+  .hero__cta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-3);
+    margin-top: var(--s-5);
+  }
+
+  /* -------------------------------------------------------- capabilities */
+  .caps__title {
+    font-size: var(--step-4);
+    max-width: 16ch;
+  }
+
+  .caps__list {
+    margin-top: var(--s-6);
+    border-top: 1px solid var(--rule-white);
+  }
+
+  .caps__row {
+    display: grid;
+    gap: 0.35rem;
+    padding-block: var(--s-5);
+    border-bottom: 1px solid var(--rule-white);
+  }
+
+  .caps__key {
+    font-size: var(--label);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    padding-top: 0.35rem;
+  }
+
+  .caps__def {
+    margin: 0;
+    max-width: 58ch;
+  }
+
+  .caps__name {
+    font-size: var(--step-1);
+    letter-spacing: -0.015em;
+  }
+
+  .caps__def p {
+    margin-top: 0.3rem;
+    color: var(--ink-muted);
+  }
+
+  @media (min-width: 48rem) {
+    .caps__row {
+      grid-template-columns: 13rem minmax(0, 1fr);
+      gap: var(--s-5);
+    }
+  }
+
+  /* -------------------------------------------------------------- safety */
+  .safety__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s-7);
+  }
+
+  /* Same automatic-minimum-size trap as the final CTA: these columns hold code
+     blocks whose single line is wider than a phone. */
+  .safety__grid > *,
+  .safety__ways > * {
+    min-width: 0;
+  }
+
+  .safety__title {
+    font-size: var(--step-4);
+    max-width: 14ch;
+  }
+
+  /* The amber is a rule, not a wash — it marks the paragraph that carries the
+     consequence rather than colouring the whole section. */
+  .safety__body {
+    margin-top: var(--s-4);
+    max-width: 54ch;
+    color: var(--ink);
+  }
+
+  .safety__body--key {
+    padding-left: var(--s-4);
+    border-left: 3px solid var(--amber);
+  }
+
+  .safety__lead > p:last-child {
+    margin-top: var(--s-5);
+  }
+
+  .safety__ways {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s-5);
+    align-content: start;
+  }
+
+  .safety__way-title {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+  }
+
+  .safety__flag {
+    font-weight: 500;
+    font-size: 0.75rem;
+    letter-spacing: 0.02em;
+    color: var(--ink);
+    background: var(--white);
+    border: 1px solid var(--rule-strong);
+    border-radius: 3px;
+    padding: 0.14rem 0.4rem;
+  }
+
+  .safety__way-body {
+    margin-top: 0.3rem;
+    font-size: 0.9375rem;
+    color: var(--ink-muted);
+    max-width: 46ch;
+  }
+
+  .safety__way pre {
+    background: var(--white);
+  }
+
+  @media (min-width: 62rem) {
+    .safety__grid {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: var(--s-8);
+    }
+  }
+
+  /* ----------------------------------------------------------- providers */
+  .providers__title {
+    font-size: var(--step-4);
+    max-width: 18ch;
+  }
+
+  .providers__lede {
+    margin-top: var(--s-4);
+    max-width: 56ch;
+  }
+
+  .providers__table {
+    margin-top: var(--s-6);
+  }
+
+  .providers__table th[scope='row'] {
+    font-weight: 400;
+  }
+
+  .providers__foot {
+    margin-top: var(--s-4);
+    font-size: 0.9375rem;
+  }
+
+  /* --------------------------------------------------------------- final */
+  /* minmax(0, 1fr), not the implicit auto column: a grid item's automatic
+     minimum size is its max-content width, and the install command is one long
+     unbreakable line — without this the column refuses to shrink and the page
+     scrolls sideways on a phone. */
+  .final__inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .final__title {
+    font-size: var(--step-4);
+    letter-spacing: -0.03em;
+    line-height: 1.02;
+  }
+
+  .final__install {
+    margin-top: var(--s-6);
+    width: min(40rem, 100%);
+  }
+
+  .final__cta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-3);
+    margin-top: var(--s-5);
+  }
+</style>

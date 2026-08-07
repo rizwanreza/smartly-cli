@@ -1,0 +1,177 @@
+---
+import { withBase, isActive } from '../lib/url';
+import { docsNav, docHref } from '../lib/nav';
+import { REPO_URL } from '../../site.config.mjs';
+
+const path = Astro.url.pathname;
+---
+
+<div class="drawer" id="docs-drawer" data-drawer hidden>
+  <div class="drawer__scrim" data-drawer-close></div>
+  <div
+    class="drawer__panel"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Site navigation"
+  >
+    <div class="drawer__top">
+      <span class="drawer__title mono">Navigation</span>
+      <button type="button" class="drawer__close" data-drawer-close>
+        <span aria-hidden="true">&times;</span>
+        <span class="sr-only">Close navigation</span>
+      </button>
+    </div>
+
+    <nav class="drawer__nav" aria-label="Documentation">
+      {
+        docsNav.map((group) => (
+          <div class="drawer__group">
+            <h2 class="drawer__group-title">{group.label}</h2>
+            <ul>
+              {group.items.map((item) => {
+                const href = withBase(docHref(item.slug));
+                return (
+                  <li>
+                    <a
+                      href={href}
+                      aria-current={isActive(path, href) ? 'page' : undefined}
+                    >
+                      {item.label}
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))
+      }
+      <div class="drawer__group">
+        <h2 class="drawer__group-title">More</h2>
+        <ul>
+          <li>
+            <a
+              href={withBase('/brand/')}
+              aria-current={isActive(path, withBase('/brand/'))
+                ? 'page'
+                : undefined}>Brand</a
+            >
+          </li>
+          <li><a href={REPO_URL} rel="noopener">GitHub</a></li>
+        </ul>
+      </div>
+    </nav>
+  </div>
+</div>
+
+<style>
+  .drawer {
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+  }
+
+  .drawer[hidden] {
+    display: none;
+  }
+
+  .drawer__scrim {
+    position: absolute;
+    inset: 0;
+    background: rgba(21, 23, 22, 0.4);
+    animation: drawer-fade var(--dur) var(--ease);
+  }
+
+  .drawer__panel {
+    position: absolute;
+    inset-block: 0;
+    left: 0;
+    width: min(20rem, 86vw);
+    background: var(--white);
+    border-right: 1px solid var(--rule-white);
+    overflow-y: auto;
+    padding: var(--s-4) var(--s-5) var(--s-8);
+    animation: drawer-slide var(--dur) var(--ease);
+  }
+
+  @keyframes drawer-fade {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @keyframes drawer-slide {
+    from {
+      transform: translateX(-100%);
+    }
+  }
+
+  .drawer__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: calc(var(--header-h) - 16px);
+    margin-bottom: var(--s-4);
+  }
+
+  .drawer__title {
+    font-size: var(--label);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+
+  .drawer__close {
+    background: none;
+    border: 0;
+    font-size: 1.6rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 0.25rem;
+    color: var(--ink-muted);
+  }
+
+  .drawer__close:hover {
+    color: var(--ink);
+  }
+
+  .drawer__group + .drawer__group {
+    margin-top: var(--s-5);
+  }
+
+  .drawer__group-title {
+    font-family: var(--font-mono);
+    font-weight: 500;
+    font-size: var(--label);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    margin-bottom: var(--s-2);
+  }
+
+  .drawer__nav ul {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    gap: 1px;
+  }
+
+  .drawer__nav a {
+    display: block;
+    padding: 0.5rem 0.6rem;
+    border-radius: var(--radius);
+    text-decoration: none;
+    font-size: 0.9375rem;
+    border-left: 2px solid transparent;
+  }
+
+  .drawer__nav a:hover {
+    background: var(--paper);
+    color: var(--ink);
+  }
+
+  .drawer__nav a[aria-current='page'] {
+    background: var(--paper);
+    border-left-color: var(--cyan);
+    font-weight: 600;
+  }
+</style>

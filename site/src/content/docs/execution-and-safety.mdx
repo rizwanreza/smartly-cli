@@ -1,0 +1,110 @@
+---
+title: Execution and safety
+description: Auto-run is the default. Here is exactly what that means, how to add a confirmation gate or dry-run, and what smartly writes to your history log.
+eyebrow: Run
+lede: smartly runs generated commands immediately unless you tell it not to. This page is the honest version of what that means and what to do about it.
+---
+
+import Callout from '../../components/Callout.astro';
+
+## Auto-run is the default
+
+<Callout type="warn" title="There is no confirmation prompt unless you configure one.">
+  `execution.mode` defaults to `auto`. smartly generates one shell command and
+  runs it, including when the command is destructive. Nothing about generating
+  a command makes that command safe to run.
+</Callout>
+
+This is intentional. The product is "say what you want and it happens", and a
+prompt on every invocation defeats that. It is also the setting most worth
+reconsidering on a machine where a wrong `rm` costs you something.
+
+Three ways to change it, from most to least permanent:
+
+```yaml
+# ~/.config/smartly/config.yaml — every call, from now on
+execution:
+  mode: confirm
+```
+
+```bash
+smartly --confirm remove every merged branch    # this call only
+smartly --dry-run remove every merged branch    # print it, run nothing
+```
+
+## Execution mode
+
+### `auto` (default)
+
+Generate and run immediately, no prompt.
+
+### `confirm`
+
+Print the command and ask `[y/N]` before running it.
+
+The prompt reads from and writes to `/dev/tty` directly rather than stdin and
+stdout, so it works even when stdin is otherwise in use — including under the
+[shell wrapper](/docs/shell-integration/), which captures stdout.
+
+If no controlling terminal is available — CI, cron, a fully non-interactive
+pipe — confirm mode **fails closed**. It will not run the command, rather than
+hang or silently proceed. Use `-y`/`--yes` in those contexts if you genuinely
+want it to run.
+
+## Per-invocation overrides
+
+| Flag | Effect |
+| --- | --- |
+| `--confirm` | Force the `[y/N]` prompt for this call. |
+| `-y`, `--yes` | Force auto-run for this call. |
+| `--dry-run` | Print the command. Ask nothing, run nothing. |
+
+`--confirm` and `-y`/`--yes` are mutually exclusive.
+
+`--dry-run` is the one to reach for when you are unsure what a phrasing will
+produce. It is also the safest way to explore a new provider or model.
+
+```bash
+smartly --dry-run clean up everything in build that is older than a week
+```
+
+## What smartly does not promise
+
+- It does not review the generated command for danger. There is no blocklist and
+  no destructive-command detector.
+- Its output sanitizer enforces that the response is exactly one clean command
+  line, and rejects anything else. That is a defence against a malformed model
+  response, not a judgement about what the command does.
+- It generates one command line. Pipes, `&&` and redirects inside that line are
+  fine, and are as consequential as anything else you would type.
+
+If a request is one you would think twice about typing yourself, use
+`--dry-run` first.
+
+## Logging
+
+Every generate-and-run invocation is appended to `log.path` as JSONL:
+
+- one `request` record — sentence, provider, model, generated command, outcome;
+- and once the command's exit code is known, a separate `completion` record,
+  correlated by `request_id`.
+
+The log is append-only. Nothing is ever rewritten in place, and the file is
+created with `0600` permissions.
+
+<Callout type="warn" title="The log stores your sentences and commands verbatim.">
+  That may include anything sensitive you typed. Treat the history log like
+  shell history — including when you decide where to put it.
+</Callout>
+
+Move it, or read it, with the path from your config:
+
+```yaml
+log:
+  path: ~/.config/smartly/history.log
+```
+
+```bash
+smartly config path                       # where the config file is
+tail -n 20 ~/.config/smartly/history.log  # the last few records
+```

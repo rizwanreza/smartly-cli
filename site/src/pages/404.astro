@@ -1,0 +1,77 @@
+---
+import Base from '../layouts/Base.astro';
+import { withBase } from '../lib/url';
+import { docsOrder, docHref } from '../lib/nav';
+---
+
+<Base
+  title="Page not found"
+  description="That page does not exist. Here is everything that does."
+>
+  <section class="nf shell">
+    <p class="eyebrow">404</p>
+    <h1 class="nf__title">Nothing ran.</h1>
+    <p class="nf__body">
+      That page does not exist. No harm done — here is everything that does.
+    </p>
+
+    <ul class="nf__list">
+      <li><a href={withBase('/')}>Home</a></li>
+      {
+        docsOrder.map((item) => (
+          <li>
+            <a href={withBase(docHref(item.slug))}>{item.label}</a>
+          </li>
+        ))
+      }
+      <li><a href={withBase('/brand/')}>Brand guidelines</a></li>
+    </ul>
+  </section>
+</Base>
+
+<style>
+  .nf {
+    padding-block: clamp(var(--s-8), 8vw, var(--s-10));
+  }
+
+  .nf__title {
+    font-size: var(--step-5);
+    letter-spacing: var(--tracking-display);
+    line-height: 1;
+  }
+
+  .nf__body {
+    margin-top: var(--s-4);
+    max-width: 44ch;
+    font-size: var(--step-1);
+    color: var(--ink-muted);
+  }
+
+  .nf__list {
+    list-style: none;
+    padding: 0;
+    margin-top: var(--s-6);
+    display: grid;
+    gap: 1px;
+    max-width: 28rem;
+    border-top: 1px solid var(--rule-white);
+  }
+
+  .nf__list a {
+    display: block;
+    padding: 0.55rem 0;
+    border-bottom: 1px solid var(--rule-white);
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  .nf__list a::before {
+    content: '›';
+    color: var(--cyan-deep);
+    margin-right: 0.6rem;
+  }
+
+  .nf__list a:hover {
+    color: var(--cyan-text);
+  }
+</style>
