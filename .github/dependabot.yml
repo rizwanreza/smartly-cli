@@ -14,13 +14,10 @@ updates:
     groups:
       site-deps:
         patterns: ["*"]
-    ignore:
-      # Astro majors change build behavior (e.g. the v6 Markdown processor
-      # swap) and need a deliberate migration, not a bot PR.
-      - dependency-name: astro
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "@astrojs/*"
-        update-types: ["version-update:semver-major"]
+    # Astro majors are deliberately NOT ignored. They were once, and the site
+    # drifted two majors behind until a batch of high-severity advisories had
+    # no non-breaking fix. The `site` job in ci.yml builds every PR, so a bot
+    # major that breaks the build fails visibly rather than merging quietly.
   - package-ecosystem: github-actions
     directory: /
     schedule:
