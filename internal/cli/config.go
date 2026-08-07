@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/rizwanreza/smartly-cli/internal/brand"
 	"github.com/rizwanreza/smartly-cli/internal/config"
 )
 
@@ -33,7 +34,10 @@ var configInitCmd = &cobra.Command{
 		path := config.Path()
 
 		if _, err := os.Stat(path); err == nil {
-			return fmt.Errorf("config file already exists at %s (remove it first if you want to regenerate it)", path)
+			return newCLIError(
+				fmt.Sprintf("A config file already exists at %s.", path),
+				"Remove it first if you want to regenerate it.",
+			)
 		} else if !os.IsNotExist(err) {
 			return err
 		}
@@ -45,7 +49,10 @@ var configInitCmd = &cobra.Command{
 			return fmt.Errorf("writing config file: %w", err)
 		}
 
-		fmt.Fprintln(cmd.OutOrStdout(), "wrote", path)
+		// A status line, not a result — so it goes to stderr, leaving this
+		// command's stdout empty rather than something a script might read.
+		p := brand.NewAuto(cmd.ErrOrStderr(), nil)
+		p.Println(p.Success("Wrote " + path))
 		return nil
 	},
 }

@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
 
+	"github.com/rizwanreza/smartly-cli/internal/brand"
 	"github.com/rizwanreza/smartly-cli/internal/config"
 	appcontext "github.com/rizwanreza/smartly-cli/internal/context"
 	"github.com/rizwanreza/smartly-cli/internal/logging"
@@ -27,11 +27,6 @@ const maxOutputTokens = 512
 var Version = "dev"
 
 var (
-	commandStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("39"))
-	errorStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("203"))
-)
-
-var (
 	providerFlag   string
 	modelFlag      string
 	contextFlag    string
@@ -43,13 +38,16 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "smartly <sentence...>",
-	Short: "Turn an English sentence into an executable shell command",
+	Use:   "smartly <request>",
+	Short: brand.Description,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("record-exit") {
 			return nil
 		}
-		return cobra.MinimumNArgs(1)(cmd, args)
+		if len(args) == 0 {
+			return errNoRequest
+		}
+		return nil
 	},
 	RunE:          runRoot,
 	SilenceUsage:  true,
@@ -67,11 +65,26 @@ func init() {
 	rootCmd.Flags().BoolVar(&printOnlyFlag, "print-only", false, "internal: print the sanitized command to stdout only (used by the shell wrapper)")
 	rootCmd.Flags().IntVar(&recordExitCode, "record-exit", -1, "internal: record the exit code of a wrapper-executed command")
 	rootCmd.MarkFlagsMutuallyExclusive("confirm", "yes")
+	installHelp(rootCmd)
 }
 
-// Execute runs the root command.
+// errNoRequest replaces cobra's "requires at least 1 arg(s), only received 0"
+// with copy that tells the reader what to type instead.
+var errNoRequest = &provider.Error{
+	Kind:    provider.ErrKindInvalid,
+	Message: "Tell smartly what you want to do.",
+	Hint:    "For example: smartly remove all worktrees except main",
+}
+
+// Execute runs the root command, rendering any terminal failure in smartly's
+// error vocabulary before returning it. The returned error has therefore
+// already been reported; callers only need it to choose an exit code.
 func Execute() error {
-	return rootCmd.Execute()
+	err := rootCmd.Execute()
+	if err != nil {
+		printError(os.Stderr, err)
+	}
+	return err
 }
 
 func runRoot(cmd *cobra.Command, args []string) error {
@@ -81,6 +94,7 @@ func runRoot(cmd *cobra.Command, args []string) error {
 
 	sentence := strings.Join(args, " ")
 	startedAt := time.Now()
+	out := statusPrinter()
 
 	cfg, err := config.Load()
 	if err != nil {
@@ -114,7 +128,7 @@ func runRoot(cmd *cobra.Command, args []string) error {
 		rec.Outcome = outcome
 		rec.Error = errNote
 		rec.DurationMS = time.Since(startedAt).Milliseconds()
-		writeRequestRecord(cfg, rec)
+		writeRequestRecord(out, cfg, rec)
 		return retErr
 	}
 
@@ -135,41 +149,57 @@ func runRoot(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	// The waiting state is armed only around the network/subprocess call —
+	// the one step slow enough to be worth acknowledging — and is erased
+	// before anything else is written. It renders only on an interactive
+	// stderr, so a redirect or a pipe never sees a byte of it.
+	waiter := brand.Thinking(out)
+	waiter.Start()
 	result, err := p.Generate(cmd.Context(), provider.GenerateRequest{
 		SystemPrompt: systemPrompt,
 		UserPrompt:   userPrompt,
 		MaxTokens:    maxOutputTokens,
 	})
+	waiter.Stop()
 	if err != nil {
 		var pErr *provider.Error
 		kind := "unknown"
-		retErr := err
 		if errors.As(err, &pErr) {
 			kind = pErr.Kind.String()
-			retErr = errors.New(pErr.Message)
 		}
-		return fail(logging.OutcomeProviderError, kind, retErr)
+		// err is returned as-is so its hint survives to printError.
+		return fail(logging.OutcomeProviderError, kind, err)
 	}
 	rec.Model = result.Model
 
 	command, err := prompt.Sanitize(result.RawText)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, errorStyle.Render("smartly: model output could not be used as-is:"))
-		fmt.Fprintln(os.Stderr, result.RawText)
+		out.Println(out.Failure(
+			"The model's output could not be used as a command.",
+			err.Error(),
+		))
+		out.Println(result.RawText)
 		return fail(logging.OutcomeSanitizeError, "", err)
 	}
 	rec.Command = command
 
 	if dryRunFlag {
-		fmt.Fprintln(os.Stdout, commandStyle.Render(command))
+		// stdout carries the command and nothing else: --dry-run is
+		// routinely piped, and a prefix or an escape sequence here would
+		// corrupt whatever consumes it.
+		printResult(os.Stdout, command)
 		return fail(logging.OutcomeDeclined, "dry_run", nil)
 	}
 
+	// In confirm mode the command is shown on the controlling terminal by
+	// the prompt itself, so it is not echoed to stderr a second time.
+	shown := false
 	if mode == "confirm" {
 		approved, ttyErr := confirmExecution(command)
 		if ttyErr != nil {
 			return fail(logging.OutcomeDeclined, "no_tty", ttyErr)
 		}
+		shown = true
 		if !approved {
 			return fail(logging.OutcomeDeclined, "", nil)
 		}
@@ -178,12 +208,20 @@ func runRoot(cmd *cobra.Command, args []string) error {
 	rec.Timestamp = time.Now().UTC().Format(time.RFC3339)
 	rec.Outcome = logging.OutcomePending
 	rec.DurationMS = time.Since(startedAt).Milliseconds()
-	writeRequestRecord(cfg, rec)
+	writeRequestRecord(out, cfg, rec)
 
-	fmt.Fprintln(os.Stderr, commandStyle.Render("$ "+command))
+	if shown {
+		// Confirm mode already displayed the command on the terminal; only
+		// the separator before the command's own output is still owed.
+		out.Blank()
+	} else {
+		printGeneratedCommand(out, command)
+	}
 
 	if printOnlyFlag {
-		fmt.Fprintln(os.Stdout, command)
+		// The shell wrapper captures this in a command substitution and
+		// eval's it — it must be the command and nothing else.
+		printResult(os.Stdout, command)
 		return nil
 	}
 
@@ -202,7 +240,7 @@ func runRoot(cmd *cobra.Command, args []string) error {
 		exitCode = exitErr.ExitCode()
 	}
 
-	writeCompletionRecord(cfg, rec.RequestID, exitCode)
+	writeCompletionRecord(out, cfg, rec.RequestID, exitCode)
 	if exitCode != 0 {
 		os.Exit(exitCode)
 	}
@@ -237,19 +275,19 @@ func requestIDFromEnv() string {
 	return logging.NewRequestID()
 }
 
-func writeRequestRecord(cfg *config.Config, rec logging.RequestRecord) {
+func writeRequestRecord(p *brand.Printer, cfg *config.Config, rec logging.RequestRecord) {
 	if err := logging.AppendRequest(cfg.Log.Path, rec); err != nil {
-		fmt.Fprintf(os.Stderr, "smartly: warning: could not write to log: %v\n", err)
+		printLogWarning(p, err)
 	}
 }
 
-func writeCompletionRecord(cfg *config.Config, requestID string, exitCode int) {
+func writeCompletionRecord(p *brand.Printer, cfg *config.Config, requestID string, exitCode int) {
 	rec := logging.CompletionRecord{
 		Timestamp: time.Now().UTC().Format(time.RFC3339),
 		RequestID: requestID,
 		ExitCode:  exitCode,
 	}
 	if err := logging.AppendCompletion(cfg.Log.Path, rec); err != nil {
-		fmt.Fprintf(os.Stderr, "smartly: warning: could not write to log: %v\n", err)
+		printLogWarning(p, err)
 	}
 }
