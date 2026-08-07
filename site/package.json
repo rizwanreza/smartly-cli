@@ -1,0 +1,27 @@
+{
+  "name": "smartly-site",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Marketing, documentation and brand site for the smartly CLI.",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build && node scripts/check-links.mjs",
+    "build:root": "BASE_PATH=/ astro build && BASE_PATH=/ node scripts/check-links.mjs",
+    "build:only": "astro build",
+    "build:assets": "node scripts/build-assets.mjs",
+    "check:links": "node scripts/check-links.mjs",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/mdx": "^4.3.6",
+    "@astrojs/sitemap": "^3.6.0",
+    "astro": "^5.14.1",
+    "github-slugger": "^2.0.0"
+  },
+  "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2"
+  }
+}

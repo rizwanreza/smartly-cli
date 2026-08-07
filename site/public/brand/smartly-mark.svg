@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!--
+  Smartly mark.
+
+  The two cyan paths are lifted verbatim from assets/smartly-logo-light.svg —
+  identical coordinates, identical stroke width, identical caps and joins. Only
+  the viewBox moved, to crop the wordmark away and centre the `>_` glyph. No
+  re-drawing, re-typesetting or distortion.
+
+  Source geometry extents (including the 20px round-capped stroke):
+    x 555 -> 669, y 67 -> 173, centre (612, 120)
+  viewBox is a 138x138 square around that centre.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="543 51 138 138" width="138" height="138" role="img" aria-labelledby="mark-title">
+  <title id="mark-title">smartly mark</title>
+  <path d="m 565,77 61,43 -61,43" fill="none" stroke="#00ddf5" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+  <path fill="#00ddf5" d="m 641,153 h 22 c 3.324,0 6,2.676 6,6 0,3.324 -2.676,6 -6,6 h -22 c -3.324,0 -6,-2.676 -6,-6 0,-3.324 2.676,-6 6,-6 z"/>
+</svg>

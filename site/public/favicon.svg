@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!--
+  Favicon: the cyan `>_` from the Smartly logo on an ink plate.
+
+  The paths are byte-identical to the ones in assets/smartly-logo-light.svg.
+  A single uniform scale (2.807) and translation places them centred in a 512
+  square — uniform, so proportions and the stroke-to-glyph ratio are preserved.
+  The ink plate exists because electric cyan on white is 1.66:1, far too low to
+  read at 16px; on ink it is 10.9:1.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-labelledby="favicon-title">
+  <title id="favicon-title">smartly</title>
+  <rect width="512" height="512" rx="112" fill="#151716"/>
+  <g transform="translate(-1461.885,-80.819) scale(2.807)">
+    <path d="m 565,77 61,43 -61,43" fill="none" stroke="#00ddf5" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+    <path fill="#00ddf5" d="m 641,153 h 22 c 3.324,0 6,2.676 6,6 0,3.324 -2.676,6 -6,6 h -22 c -3.324,0 -6,-2.676 -6,-6 0,-3.324 2.676,-6 6,-6 z"/>
+  </g>
+</svg>
