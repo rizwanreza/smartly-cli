@@ -62,6 +62,11 @@ func (p *codexCLIProvider) Generate(ctx context.Context, req GenerateRequest) (*
 
 	args := buildCodexArgs(p.model, combinePrompt(req.SystemPrompt, req.UserPrompt))
 	stdout, stderr, runErr := runCLI(ctx, p.binary, args)
+	if runErr != nil {
+		if tErr := timeoutError("codex", ctx.Err()); tErr != nil {
+			return nil, tErr
+		}
+	}
 	return parseCodexOutput(stdout, stderr, runErr, p.model)
 }
 

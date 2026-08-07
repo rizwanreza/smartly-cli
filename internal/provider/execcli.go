@@ -3,6 +3,7 @@ package provider
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -57,6 +58,26 @@ func runCLI(ctx context.Context, binary string, args []string) (stdout, stderr [
 	}
 
 	return outBuf.Bytes(), errBuf.Bytes(), err
+}
+
+// timeoutError returns nil unless ctxErr is (wraps) context.DeadlineExceeded,
+// in which case it returns an actionable ErrKindTimeout error naming
+// cliName and cliCallTimeout. context.Canceled is deliberately NOT mapped
+// here — cancellation (e.g. the user's own Ctrl-C propagating through ctx)
+// is not a "the CLI got stuck" situation and keeps its existing handling.
+// Callers should invoke this with ctx.Err() right after runCLI returns a
+// non-nil error, before falling through to the per-provider parse/heuristic
+// path, so a deadline-driven kill is reported as a timeout rather than the
+// opaque "signal: killed" text runCLI's process-group kill leaves behind.
+func timeoutError(cliName string, ctxErr error) *Error {
+	if !errors.Is(ctxErr, context.DeadlineExceeded) {
+		return nil
+	}
+	return &Error{
+		Kind:    ErrKindTimeout,
+		Message: fmt.Sprintf("%s CLI timed out after %s without completing — it may be stuck retrying inside its sandbox; try again or use an API-key provider", cliName, cliCallTimeout),
+		Cause:   ctxErr,
+	}
 }
 
 // lookPathOrHardFail is the one hard-fail check both CLI providers use at

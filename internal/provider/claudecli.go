@@ -73,6 +73,11 @@ func (p *claudeCLIProvider) Generate(ctx context.Context, req GenerateRequest) (
 
 	args := buildClaudeArgs(p.model, p.maxBudgetUSD, req)
 	stdout, stderr, runErr := runCLI(ctx, p.binary, args)
+	if runErr != nil {
+		if tErr := timeoutError("claude", ctx.Err()); tErr != nil {
+			return nil, tErr
+		}
+	}
 	return parseClaudeOutput(stdout, stderr, runErr, p.model)
 }
 

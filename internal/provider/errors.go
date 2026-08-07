@@ -10,6 +10,7 @@ const (
 	ErrKindOverloaded
 	ErrKindNetwork
 	ErrKindInvalid
+	ErrKindTimeout
 	ErrKindUnknown
 )
 
@@ -26,6 +27,8 @@ func (k ErrorKind) String() string {
 		return "network"
 	case ErrKindInvalid:
 		return "invalid"
+	case ErrKindTimeout:
+		return "timeout"
 	default:
 		return "unknown"
 	}
