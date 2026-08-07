@@ -74,7 +74,7 @@ This is documented as a best-effort seatbelt with possible false negatives. Keep
 
 Safety rules baked into the flow, in order of how badly it would go to break them: no API key is ever asked for, echoed or written (env-var detection only; a key already in the user's file is carried through on write but replaced with a placeholder in anything printed to the terminal); `context: full` requires a second explicit confirmation stating the consequence; rc files are never edited, only the eval line is printed; an existing config is backed up (timestamped, 0600) and pre-seeds the answers; the final write is confirmed, and declining prints the YAML and writes nothing; no tty fails closed pointing at `smartly config init`. `execution.mode: auto` remains the compiled-in default — onboarding changes nothing for anyone who never runs it.
 
-Brand: the typed logo is `smartly >_` with only `>_` in electric cyan `#00DDF5`; ink `#151716`, deep cyan `#007F91`, amber `#FFB547` for attention/confirmation only, red `#F05D5E` for failure only (no classifier verdict is ever red — being asked is not a failure). huh is themed from `ThemeBase()` in `onboardTheme()`.
+Brand in onboard specifically: huh is themed from `ThemeBase()` in `onboardTheme()`, and no classifier verdict is ever rendered red — being asked is not a failure. Everything else (palette, symbols, voice) comes from the brand guideline; see the Brand section below.
 
 ### Config template rendering (`internal/cli/template.go`)
 
@@ -89,6 +89,12 @@ The history log (`internal/logging`) is **strictly append-only**: a `request` re
 ### Config (`internal/config`)
 
 `Load()` merges `config.yaml` onto `Defaults()` — a field absent from the file keeps its Go-side default rather than zeroing out. API key precedence for `anthropic`/`openai` is: env var named by `api_key_env` → the provider's hardcoded default env var → the config file's `api_key` fallback (`ResolveAPIKey`). `claude-cli`/`codex-cli` have no `api_key`-shaped fields at all by design. `expandHome` exists because YAML values are read literally — unlike a shell argument, nothing expands a `~/...` path in `log.path` for you.
+
+### Brand (`docs/BRAND.md` is the authority)
+
+**Read `docs/BRAND.md` before writing or changing anything user-facing** — CLI output copy, help text, error messages, README, the website, or docs. It defines the palette (and which colors are allowed to mean what: cyan for identity/success, amber for consequence only, red for failure only), the typed logo `smartly >_` and its rules, the terminal symbols (`›` `→` `$` `!` `·`) and when each is used, voice principles with good/bad copy pairs, and naming conventions. Highlights that get violated most easily: sentence case everywhere; lowercase `smartly` in prose; one wink per page and never around risk; never rely on color alone; no branding in JSONL logs or any machine-readable output.
+
+The guideline is deliberately **not published on the website** — it was removed from the public site and lives only in this repo. Don't re-add a brand page to `site/` without being asked; the designed page is recoverable from git history (`site/src/pages/brand.astro`) if that decision is ever reversed. In Go code, the brand's terminal implementation is `internal/brand` (color capability detection, the `Printer`, status symbols) — extend that package rather than emitting ANSI or lipgloss styles elsewhere; the one sanctioned exception is onboard's tty-only styles in `internal/cli/onboard_ui.go`.
 
 ### Testing conventions
 
