@@ -41,15 +41,75 @@ the fast path: one HTTP request, precise typed errors, no extra processes.
 environment. `openai` ships **no default model**, so setting
 `providers.openai.model` is mandatory before it will run.
 
-Both accept an optional `base_url`, for a self-hosted or proxied endpoint —
-Azure OpenAI, vLLM, LM Studio and similar.
+Both accept an optional `base_url`, for a self-hosted or proxied endpoint.
+
+## Any OpenAI-compatible API
+
+The `openai` provider is not limited to OpenAI. It speaks the Chat Completions
+API, which most inference vendors implement, so pointing `base_url` at one is
+enough — Fireworks, Together, Groq, DeepInfra, OpenRouter, Azure OpenAI, or
+anything local like vLLM, Ollama or LM Studio.
+
+Three settings, and the second is the one people miss:
 
 ```yaml
+provider: openai
+
 providers:
   openai:
-    model: gpt-4.1-mini
-    base_url: "https://my-azure-endpoint.openai.azure.com"
+    model: accounts/fireworks/models/llama-v3p1-70b-instruct
+    api_key_env: FIREWORKS_API_KEY
+    base_url: https://api.fireworks.ai/inference/v1
 ```
+
+<Callout title="You do not have to put a third-party key in OPENAI_API_KEY.">
+  `api_key_env` names the variable smartly reads. Set it to
+  `FIREWORKS_API_KEY` and your OpenAI key, if you have one, stays untouched in
+  `OPENAI_API_KEY` — so you can switch between the two by editing one line
+  instead of re-exporting a shell variable.
+</Callout>
+
+**`model` is that vendor's model id, not an OpenAI name.** It is passed through
+verbatim, so it needs to be exactly what the provider's own docs list —
+`accounts/fireworks/models/...` for Fireworks, `meta-llama/...` for Together,
+whatever your local server reports for vLLM.
+
+**`base_url` is the root the API is served from, including the version
+segment** — for Fireworks that is `https://api.fireworks.ai/inference/v1`, and
+smartly appends `/chat/completions` itself. A trailing slash makes no
+difference either way.
+
+Then set the key and go:
+
+```bash
+export FIREWORKS_API_KEY="fw-..."
+smartly --dry-run show hidden files sorted by size
+```
+
+`smartly config show` will confirm what resolved, and reports only whether a
+key was found — never its value.
+
+### What to expect
+
+- **Any endpoint that implements Chat Completions works.** smartly deliberately
+  uses that endpoint rather than the newer Responses API, precisely because
+  compatible servers implement Chat Completions and frequently do not implement
+  the other one.
+- **Error messages get vaguer.** smartly maps failures into the same
+  auth/rate-limit/overloaded/network taxonomy, but third-party servers vary in
+  what they return, so a misconfigured `base_url` may surface as a generic
+  failure rather than a precise one.
+- **Command quality tracks the model, not smartly.** Smaller open-weight models
+  are likelier to emit prose, a code fence, or a multi-line answer — all of
+  which smartly rejects outright rather than trying to salvage. If a model
+  gives you frequent "unclean response" errors, that is the model, and a larger
+  instruct-tuned one will fix it.
+
+<Callout type="warn" title="A base_url sends your prompt somewhere else.">
+  Whatever you point at receives your request text, and with `context: light`
+  (the default) that includes a capped directory listing and your git branch
+  and status. Point it at endpoints you trust the way you would trust OpenAI.
+</Callout>
 
 ## CLI-backed providers
 

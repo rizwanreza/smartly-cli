@@ -134,11 +134,16 @@ providers:
     api_key: {{.AnthropicKey}}   # fallback only, used if the env var above is unset
     base_url: {{.AnthropicBase}}  # optional: self-hosted/proxy Anthropic-compatible endpoint
 
+  # The openai provider also drives any OpenAI-compatible API: set base_url to
+  # that vendor's endpoint, model to its own model id, and api_key_env to the
+  # variable holding its key — Fireworks, Together, Groq, OpenRouter, Azure
+  # OpenAI, vLLM, Ollama, LM Studio. See the README's "OpenAI-compatible
+  # endpoints" section. Note a base_url sends your prompt and context there.
   openai:
     model: {{.OpenAIModel}}     # required if provider is openai; smartly ships no default
     api_key_env: {{.OpenAIEnv}}
     api_key: {{.OpenAIKey}}
-    base_url: {{.OpenAIBase}}  # optional: Azure OpenAI, vLLM, LM Studio, etc.
+    base_url: {{.OpenAIBase}}  # e.g. https://api.fireworks.ai/inference/v1
 
   # claude-cli / codex-cli shell out to your own logged-in claude/codex CLI
   # session instead of an API key — no api_key field exists for either.
