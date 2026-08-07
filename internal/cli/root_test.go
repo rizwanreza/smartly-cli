@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"syscall"
 	"testing"
 
 	"github.com/rizwanreza/smartly-cli/internal/config"
@@ -84,6 +85,28 @@ func TestApplyOverrides(t *testing.T) {
 				t.Errorf("Context = %q, want %q", cfg.Context, tt.wantContext)
 			}
 			tt.check(t, cfg)
+		})
+	}
+}
+
+func TestExitCodeFromWaitStatus(t *testing.T) {
+	tests := []struct {
+		name string
+		ws   syscall.WaitStatus
+		want int
+	}{
+		{name: "normal exit zero", ws: syscall.WaitStatus(0 << 8), want: 0},
+		{name: "normal exit nonzero", ws: syscall.WaitStatus(7 << 8), want: 7},
+		{name: "killed by SIGINT maps to 130", ws: syscall.WaitStatus(int(syscall.SIGINT)), want: 128 + int(syscall.SIGINT)},
+		{name: "killed by SIGQUIT maps to 128+signal", ws: syscall.WaitStatus(int(syscall.SIGQUIT)), want: 128 + int(syscall.SIGQUIT)},
+		{name: "killed by SIGKILL maps to 128+signal", ws: syscall.WaitStatus(int(syscall.SIGKILL)), want: 128 + int(syscall.SIGKILL)},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := exitCodeFromWaitStatus(tt.ws); got != tt.want {
+				t.Errorf("exitCodeFromWaitStatus(%v) = %d, want %d", tt.ws, got, tt.want)
+			}
 		})
 	}
 }

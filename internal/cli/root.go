@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/charmbracelet/lipgloss"
@@ -132,11 +134,13 @@ func runRoot(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	result, err := p.Generate(cmd.Context(), provider.GenerateRequest{
+	genCtx, stopGenNotify := signal.NotifyContext(cmd.Context(), os.Interrupt)
+	result, err := p.Generate(genCtx, provider.GenerateRequest{
 		SystemPrompt: systemPrompt,
 		UserPrompt:   userPrompt,
 		MaxTokens:    maxOutputTokens,
 	})
+	stopGenNotify()
 	if err != nil {
 		var pErr *provider.Error
 		kind := "unknown"
@@ -196,19 +200,33 @@ func runRoot(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	execCmd := exec.CommandContext(cmd.Context(), "/bin/sh", "-c", command)
+	execCmd := exec.Command("/bin/sh", "-c", command)
 	execCmd.Stdin = os.Stdin
 	execCmd.Stdout = os.Stdout
 	execCmd.Stderr = os.Stderr
 
+	// The child inherits smartly's foreground process group, so a Ctrl-C
+	// (SIGINT) or Ctrl-\ (SIGQUIT) at the terminal is delivered to both
+	// smartly and the child simultaneously. If smartly dies with the child,
+	// writeCompletionRecord below never runs and the append-only history log
+	// is left with a permanently "pending" request. Ignoring these signals
+	// here means smartly survives; the child still receives and reacts to
+	// them as normal.
+	signal.Ignore(os.Interrupt, syscall.SIGQUIT)
 	runErr := execCmd.Run()
+	signal.Reset(os.Interrupt, syscall.SIGQUIT)
+
 	exitCode := 0
 	if runErr != nil {
 		var exitErr *exec.ExitError
 		if !errors.As(runErr, &exitErr) {
 			return fmt.Errorf("running generated command: %w", runErr)
 		}
-		exitCode = exitErr.ExitCode()
+		if ws, ok := exitErr.Sys().(syscall.WaitStatus); ok {
+			exitCode = exitCodeFromWaitStatus(ws)
+		} else {
+			exitCode = exitErr.ExitCode()
+		}
 	}
 
 	writeCompletionRecord(cfg, rec.RequestID, exitCode)
@@ -216,6 +234,19 @@ func runRoot(cmd *cobra.Command, args []string) error {
 		os.Exit(exitCode)
 	}
 	return nil
+}
+
+// exitCodeFromWaitStatus maps a child process's wait status to the exit code
+// smartly reports and logs. A process killed by a signal (e.g. Ctrl-C
+// delivering SIGINT) has no ordinary exit status — ws.ExitStatus() is
+// meaningless in that case — so it's reported using the conventional shell
+// convention of 128+signal (130 for SIGINT) instead of the -1 exec.ExitError
+// would otherwise yield.
+func exitCodeFromWaitStatus(ws syscall.WaitStatus) int {
+	if ws.Signaled() {
+		return 128 + int(ws.Signal())
+	}
+	return ws.ExitStatus()
 }
 
 // resolveMode determines the effective execution mode from the configured
