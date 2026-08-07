@@ -1,0 +1,55 @@
+version: 2
+
+project_name: smartly
+
+builds:
+  - id: smartly
+    main: ./cmd/smartly
+    binary: smartly
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X github.com/rizwanreza/smartly-cli/internal/cli.Version={{.Version}}
+
+archives:
+  - id: smartly
+    formats: [tar.gz]
+    name_template: >-
+      {{ .ProjectName }}_{{ .Os }}_{{ .Arch }}
+
+checksum:
+  name_template: "checksums.txt"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+
+homebrew_casks:
+  - name: smartly
+    repository:
+      owner: rizwanreza
+      name: homebrew-tap
+    directory: Casks
+    homepage: "https://github.com/rizwanreza/smartly-cli"
+    description: "Turn an English sentence into an executable shell command"
+    license: "MIT"
+    binaries:
+      - smartly
+    caveats: |
+      Run `smartly config init` to write a default config, and
+      `eval "$(smartly init bash)"` (or `init zsh`) in your shell rc file
+      to enable commands that change directory or set environment variables.
+
+release:
+  github:
+    owner: rizwanreza
+    name: smartly-cli
