@@ -22,7 +22,8 @@ func newOpenAIProvider(cfg config.OpenAIConfig) (*openAIProvider, error) {
 	if cfg.Model == "" {
 		return nil, &Error{
 			Kind:    ErrKindInvalid,
-			Message: "providers.openai.model is not set: smartly ships no default OpenAI model, set providers.openai.model in your config",
+			Message: "No OpenAI model is configured.",
+			Hint:    "Set providers.openai.model in your config, or pass --model.",
 		}
 	}
 
@@ -34,7 +35,8 @@ func newOpenAIProvider(cfg config.OpenAIConfig) (*openAIProvider, error) {
 		}
 		return nil, &Error{
 			Kind:    ErrKindAuth,
-			Message: fmt.Sprintf("no OpenAI API key found: set %s or providers.openai.api_key in config", envName),
+			Message: "No OpenAI API key found.",
+			Hint:    fmt.Sprintf("Set %s, or choose another provider with --provider.", envName),
 		}
 	}
 
@@ -77,7 +79,7 @@ func (p *openAIProvider) Generate(ctx context.Context, req GenerateRequest) (*Ge
 	}
 
 	if len(resp.Choices) == 0 {
-		return nil, &Error{Kind: ErrKindUnknown, Message: "OpenAI API returned no choices"}
+		return nil, &Error{Kind: ErrKindUnknown, Message: "OpenAI returned no completion choices."}
 	}
 
 	return &GenerateResult{
@@ -93,16 +95,16 @@ func mapOpenAIError(err error) error {
 	if errors.As(err, &apiErr) {
 		switch apiErr.StatusCode {
 		case 401, 403:
-			return &Error{Kind: ErrKindAuth, Message: "OpenAI API key rejected. Check OPENAI_API_KEY or providers.openai.api_key in config.", Cause: err}
+			return &Error{Kind: ErrKindAuth, Message: "OpenAI rejected the API key.", Hint: "Check OPENAI_API_KEY or providers.openai.api_key in your config.", Cause: err}
 		case 429:
-			return &Error{Kind: ErrKindRateLimit, Message: "OpenAI API rate limit hit. Wait and retry, or reduce request frequency.", Cause: err}
+			return &Error{Kind: ErrKindRateLimit, Message: "OpenAI rate limit reached.", Hint: "Wait and retry, or reduce how often you send requests.", Cause: err}
 		case 500, 502, 503, 504:
-			return &Error{Kind: ErrKindOverloaded, Message: "OpenAI API is unavailable. Try again shortly.", Cause: err}
+			return &Error{Kind: ErrKindOverloaded, Message: "OpenAI is unavailable.", Hint: "Try again shortly.", Cause: err}
 		case 400:
-			return &Error{Kind: ErrKindInvalid, Message: fmt.Sprintf("OpenAI API rejected the request: %v", err), Cause: err}
+			return &Error{Kind: ErrKindInvalid, Message: fmt.Sprintf("OpenAI rejected the request: %v", err), Cause: err}
 		default:
 			return &Error{Kind: ErrKindUnknown, Message: fmt.Sprintf("OpenAI API error (%d): %v", apiErr.StatusCode, err), Cause: err}
 		}
 	}
-	return &Error{Kind: ErrKindNetwork, Message: fmt.Sprintf("could not reach OpenAI API: %v", err), Cause: err}
+	return &Error{Kind: ErrKindNetwork, Message: "Could not reach OpenAI.", Hint: fmt.Sprintf("Check your network connection. (%v)", err), Cause: err}
 }

@@ -126,17 +126,17 @@ func parseCodexOutput(stdout, stderr []byte, runErr error, model string) (*Gener
 	if runErr != nil {
 		combined := string(stdout) + "\n" + string(stderr)
 		if looksLikeAuthFailure(combined) {
-			return nil, &Error{Kind: ErrKindAuth, Message: "codex CLI reported an authentication failure — run `codex login` and try again", Cause: runErr}
+			return nil, &Error{Kind: ErrKindAuth, Message: "The codex CLI reported an authentication failure.", Hint: "Run `codex login` and try again.", Cause: runErr}
 		}
 		msg := strings.TrimSpace(string(stderr))
 		if msg == "" {
 			msg = runErr.Error()
 		}
-		return nil, &Error{Kind: ErrKindUnknown, Message: fmt.Sprintf("codex CLI invocation failed: %s", msg), Cause: runErr}
+		return nil, &Error{Kind: ErrKindUnknown, Message: fmt.Sprintf("The codex CLI failed: %s", msg), Cause: runErr}
 	}
 
 	if !sawAgentMessage {
-		return nil, &Error{Kind: ErrKindUnknown, Message: "codex CLI produced no agent_message output"}
+		return nil, &Error{Kind: ErrKindUnknown, Message: "The codex CLI produced no agent_message output."}
 	}
 
 	return &GenerateResult{

@@ -30,8 +30,12 @@ func newClaudeCLIProvider(cfg config.ClaudeCLIConfig) (*claudeCLIProvider, error
 	}
 	if cfg.Model == "" {
 		return nil, &Error{
-			Kind:    ErrKindInvalid,
-			Message: "providers.claude-cli.model is not set: an explicit --model is always required for claude-cli (omitting it triggers ambiguous internal multi-model routing), set providers.claude-cli.model in your config",
+			Kind: ErrKindInvalid,
+			// An explicit model is always required here: omitting it makes
+			// the claude CLI route internally across models, so the result
+			// cannot be attributed to a known model.
+			Message: "No claude-cli model is configured.",
+			Hint:    "Set providers.claude-cli.model in your config, or pass --model.",
 		}
 	}
 
@@ -128,7 +132,7 @@ func parseClaudeOutput(stdout, stderr []byte, runErr error, model string) (*Gene
 	if runErr != nil {
 		combined := string(stdout) + "\n" + string(stderr)
 		if looksLikeAuthFailure(combined) {
-			return nil, &Error{Kind: ErrKindAuth, Message: "claude CLI reported an authentication failure — run `claude login` and try again", Cause: runErr}
+			return nil, &Error{Kind: ErrKindAuth, Message: "The claude CLI reported an authentication failure.", Hint: "Run `claude login` and try again.", Cause: runErr}
 		}
 		msg := parsed.failureText()
 		if msg == "" {
@@ -137,19 +141,19 @@ func parseClaudeOutput(stdout, stderr []byte, runErr error, model string) (*Gene
 		if msg == "" {
 			msg = runErr.Error()
 		}
-		return nil, &Error{Kind: ErrKindUnknown, Message: fmt.Sprintf("claude CLI invocation failed: %s", msg), Cause: runErr}
+		return nil, &Error{Kind: ErrKindUnknown, Message: fmt.Sprintf("The claude CLI failed: %s", msg), Cause: runErr}
 	}
 
 	if unmarshalErr != nil {
-		return nil, &Error{Kind: ErrKindUnknown, Message: fmt.Sprintf("claude CLI returned unparseable output: %v", unmarshalErr), Cause: unmarshalErr}
+		return nil, &Error{Kind: ErrKindUnknown, Message: fmt.Sprintf("The claude CLI returned output smartly could not parse: %v", unmarshalErr), Cause: unmarshalErr}
 	}
 
 	if parsed.IsError {
 		msg := parsed.failureText()
 		if looksLikeAuthFailure(msg) {
-			return nil, &Error{Kind: ErrKindAuth, Message: "claude CLI reported an authentication failure — run `claude login` and try again"}
+			return nil, &Error{Kind: ErrKindAuth, Message: "The claude CLI reported an authentication failure.", Hint: "Run `claude login` and try again."}
 		}
-		return nil, &Error{Kind: ErrKindUnknown, Message: fmt.Sprintf("claude CLI reported an error: %s", msg)}
+		return nil, &Error{Kind: ErrKindUnknown, Message: fmt.Sprintf("The claude CLI reported an error: %s", msg)}
 	}
 
 	return &GenerateResult{

@@ -36,11 +36,28 @@ func (k ErrorKind) String() string {
 
 // Error is the taxonomy every provider implementation maps its SDK-specific
 // errors into at the call boundary.
+//
+// Message states what went wrong, in sentence case. Hint, when present,
+// states what the user should do about it — it is kept separate so the CLI
+// can render it as its own indented line under the message, per smartly's
+// error vocabulary:
+//
+//	× No Anthropic API key found.
+//	  Set ANTHROPIC_API_KEY, or choose another provider with --provider.
 type Error struct {
 	Kind    ErrorKind
 	Message string
+	Hint    string
 	Cause   error
 }
 
-func (e *Error) Error() string { return e.Message }
+// Error returns message and hint as one string, so an Error rendered through
+// a plain %v or wrapped by another error still carries its next step.
+func (e *Error) Error() string {
+	if e.Hint == "" {
+		return e.Message
+	}
+	return e.Message + " " + e.Hint
+}
+
 func (e *Error) Unwrap() error { return e.Cause }

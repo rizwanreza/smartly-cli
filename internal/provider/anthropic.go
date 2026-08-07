@@ -28,7 +28,8 @@ func newAnthropicProvider(cfg config.AnthropicConfig) (*anthropicProvider, error
 		}
 		return nil, &Error{
 			Kind:    ErrKindAuth,
-			Message: fmt.Sprintf("no Anthropic API key found: set %s or providers.anthropic.api_key in config", envName),
+			Message: "No Anthropic API key found.",
+			Hint:    fmt.Sprintf("Set %s, or choose another provider with --provider.", envName),
 		}
 	}
 
@@ -93,16 +94,16 @@ func mapAnthropicError(err error) error {
 	if errors.As(err, &apiErr) {
 		switch apiErr.Type() {
 		case anthropic.ErrorTypeAuthenticationError, anthropic.ErrorTypePermissionError:
-			return &Error{Kind: ErrKindAuth, Message: "Anthropic API key rejected. Check ANTHROPIC_API_KEY or providers.anthropic.api_key in config.", Cause: err}
+			return &Error{Kind: ErrKindAuth, Message: "Anthropic rejected the API key.", Hint: "Check ANTHROPIC_API_KEY or providers.anthropic.api_key in your config.", Cause: err}
 		case anthropic.ErrorTypeRateLimitError:
-			return &Error{Kind: ErrKindRateLimit, Message: "Anthropic API rate limit hit. Wait and retry, or reduce request frequency.", Cause: err}
+			return &Error{Kind: ErrKindRateLimit, Message: "Anthropic rate limit reached.", Hint: "Wait and retry, or reduce how often you send requests.", Cause: err}
 		case anthropic.ErrorTypeOverloadedError:
-			return &Error{Kind: ErrKindOverloaded, Message: "Anthropic API is overloaded. Try again shortly.", Cause: err}
+			return &Error{Kind: ErrKindOverloaded, Message: "Anthropic is overloaded.", Hint: "Try again shortly.", Cause: err}
 		case anthropic.ErrorTypeInvalidRequestError:
-			return &Error{Kind: ErrKindInvalid, Message: fmt.Sprintf("Anthropic API rejected the request: %v", err), Cause: err}
+			return &Error{Kind: ErrKindInvalid, Message: fmt.Sprintf("Anthropic rejected the request: %v", err), Cause: err}
 		default:
 			return &Error{Kind: ErrKindUnknown, Message: fmt.Sprintf("Anthropic API error (%d): %v", apiErr.StatusCode, err), Cause: err}
 		}
 	}
-	return &Error{Kind: ErrKindNetwork, Message: fmt.Sprintf("could not reach Anthropic API: %v", err), Cause: err}
+	return &Error{Kind: ErrKindNetwork, Message: "Could not reach Anthropic.", Hint: fmt.Sprintf("Check your network connection. (%v)", err), Cause: err}
 }
