@@ -90,6 +90,18 @@ The history log (`internal/logging`) is **strictly append-only**: a `request` re
 
 `Load()` merges `config.yaml` onto `Defaults()` — a field absent from the file keeps its Go-side default rather than zeroing out. API key precedence for `anthropic`/`openai` is: env var named by `api_key_env` → the provider's hardcoded default env var → the config file's `api_key` fallback (`ResolveAPIKey`). `claude-cli`/`codex-cli` have no `api_key`-shaped fields at all by design. `expandHome` exists because YAML values are read literally — unlike a shell argument, nothing expands a `~/...` path in `log.path` for you.
 
+### Website (`site/`, deployed to https://smartlycli.com)
+
+Astro static build, no client framework, no analytics, no third-party requests — the fonts are self-hosted and a strict "no external URLs at runtime" posture is part of the design, so don't add a CDN script or a webfont link.
+
+Every deployment-shaped value lives in `site/site.config.mjs`, and **nothing about the deploy target is hardcoded in the source**. `BASE_PATH` and `SITE_URL` are read from the environment; `.github/workflows/pages.yml` passes `${{ steps.pages.outputs.base_path }}` and `origin` from `actions/configure-pages`, which follow whatever the Pages site is actually configured as. That is why moving from project pages (`rizwanreza.github.io/smartly-cli`) to the apex needed no workflow change at all — only the local-build defaults, which now match production at `/` and `https://smartlycli.com`. If you find yourself typing the domain into a component, that's the bug.
+
+`BASE_PATH` feeds three separate things — Astro's `base`, `withBase()` in `src/lib/url.ts`, and the `rehype-base-urls` plugin that rewrites root-relative links written inside Markdown — so a new internal link has to go through one of them, never a bare `/docs/...` in an `.astro` file. `npm run build:subpath` builds the whole site under `/smartly-cli` and exists purely so that machinery keeps being exercised now that production doesn't use it; run it after touching anything URL-shaped.
+
+`npm run build` is `astro build` followed by `scripts/check-links.mjs`, which fails on any broken internal link, heading fragment or asset, and on any internal URL missing the configured base path. It gates the deploy, so a link typo fails CI rather than shipping.
+
+Astro majors are deliberately **not** ignored in `.github/dependabot.yml` — they were once, and the site drifted two majors behind until a batch of high-severity advisories had no non-breaking fix. The `site` job in `ci.yml` builds every PR, so a breaking bot major fails visibly instead of merging quietly. Relatedly: regenerate `site/package-lock.json` with a full `rm -rf node_modules package-lock.json && npm install`, not an incremental one — a macOS-only install silently drops sharp's `@emnapi/*` wasm fallbacks and `npm ci` then refuses to install on the Linux runner.
+
 ### Brand (`docs/BRAND.md` is the authority)
 
 **Read `docs/BRAND.md` before writing or changing anything user-facing** — CLI output copy, help text, error messages, README, the website, or docs. It defines the palette (and which colors are allowed to mean what: cyan for identity/success, amber for consequence only, red for failure only), the typed logo `smartly >_` and its rules, the terminal symbols (`›` `→` `$` `!` `·`) and when each is used, voice principles with good/bad copy pairs, and naming conventions. Highlights that get violated most easily: sentence case everywhere; lowercase `smartly` in prose; one wink per page and never around risk; never rely on color alone; no branding in JSONL logs or any machine-readable output.

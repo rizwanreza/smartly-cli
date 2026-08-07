@@ -12,12 +12,21 @@ import Transform from '../../components/Transform.astro';
 ## What you need
 
 - **macOS or Linux**, running bash or zsh. Windows and PowerShell are not supported yet.
-- **Go**, to build the binary with `go install`.
+- **Homebrew**, or **Go** if you would rather build the binary yourself.
 - **An `ANTHROPIC_API_KEY`**, because smartly defaults to `provider: anthropic`.
   If you would rather use an existing Claude or ChatGPT subscription, or OpenAI,
   see [Providers](/docs/providers/).
 
 ## Install
+
+```bash
+brew install rizwanreza/tap/smartly
+```
+
+The macOS binaries are signed with an Apple Developer ID and notarized, so
+Gatekeeper lets them run with no extra steps.
+
+Or build it yourself with Go:
 
 ```bash
 go install github.com/rizwanreza/smartly-cli/cmd/smartly@latest
@@ -38,15 +47,6 @@ export PATH="$PATH:$(go env GOPATH)/bin"   # add to ~/.bashrc
 ```
   </Fragment>
 </Platform>
-
-Or install with Homebrew:
-
-```bash
-brew install rizwanreza/tap/smartly
-```
-
-The macOS binaries are signed with an Apple Developer ID and notarized, so
-Gatekeeper lets them run with no extra steps.
 
 Prebuilt binaries for macOS and Linux are also on the
 [releases page](https://github.com/rizwanreza/smartly-cli/releases).
@@ -79,11 +79,8 @@ export ANTHROPIC_API_KEY="sk-ant-..."   # add to ~/.bashrc
 
 Start with `--dry-run`, which prints the command and does nothing else:
 
-```bash
-smartly --dry-run show hidden files sorted by size
-```
-
 <Transform
+  invocation="smartly --dry-run"
   request="show hidden files sorted by size"
   command="ls -lahS"
 />

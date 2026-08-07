@@ -90,7 +90,9 @@ function tokenize(command: string) {
                 <span class="demo__glyph" aria-hidden="true">
                   ›
                 </span>
-                <span>{example.request}</span>
+                <span>
+                  <span class="demo__bin">smartly</span> {example.request}
+                </span>
               </p>
               <p class="demo__line demo__line--out">
                 <span class="demo__glyph demo__glyph--out" aria-hidden="true">
@@ -238,6 +240,12 @@ function tokenize(command: string) {
     .demo__slide[data-active] .demo__line--out {
       animation: none;
     }
+  }
+
+  /* The binary sits at full strength against the muted request it carries,
+     so the line still reads request-first. Brightness, not colour. */
+  .demo__bin {
+    color: var(--on-ink);
   }
 
   .demo__glyph {
