@@ -28,7 +28,7 @@ jobs:
           if [ -f "docs/releases/${GITHUB_REF_NAME}.md" ]; then
             echo "flag=--release-notes=docs/releases/${GITHUB_REF_NAME}.md" >> "$GITHUB_OUTPUT"
           fi
-      - uses: goreleaser/goreleaser-action@v6
+      - uses: goreleaser/goreleaser-action@v7
         with:
           distribution: goreleaser
           version: "~> v2"
