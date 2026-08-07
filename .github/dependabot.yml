@@ -14,6 +14,13 @@ updates:
     groups:
       site-deps:
         patterns: ["*"]
+    ignore:
+      # Astro majors change build behavior (e.g. the v6 Markdown processor
+      # swap) and need a deliberate migration, not a bot PR.
+      - dependency-name: astro
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@astrojs/*"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
