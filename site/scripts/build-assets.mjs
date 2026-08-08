@@ -53,7 +53,7 @@ const og = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" vi
   <g transform="translate(80, 52) scale(0.42)">${logoInner}</g>
 
   <text x="80" y="288" font-family="Instrument Sans" font-size="82" letter-spacing="-2.9" fill="${INK}">Tell your shell what you mean.</text>
-  <text x="80" y="344" font-family="Geist Mono" font-weight="500" font-size="25" fill="#006473">You know what. Smartly knows how.</text>
+  <text x="80" y="344" font-family="Geist Mono" font-weight="500" font-size="25" fill="#006473">You know what. smartly knows how.</text>
 
   <line x1="80" y1="418" x2="1120" y2="418" stroke="#DCD6C5" stroke-width="1"/>
 

@@ -56,8 +56,9 @@ will run — it just affects the subprocess it ran in, not your interactive shel
 <Callout type="warn" title="The function evaluates the generated command in your shell.">
   That is the entire point of it, and it is why it can change your working
   directory. It does not add a confirmation step. If you want one, set
-  `execution.mode: confirm` — see [Execution and
-  safety](/docs/execution-and-safety/).
+  `execution.mode` to `confirm` or `confirm-destructive` — the prompt uses
+  `/dev/tty`, so it still works under the function. See [Execution and
+  safety](/docs/execution-and-safety/#execution-mode).
 </Callout>
 
 ## How it works

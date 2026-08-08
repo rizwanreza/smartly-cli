@@ -29,9 +29,9 @@ const capabilities = [
     body: 'Anthropic and OpenAI by API key, or your own logged-in `claude` / `codex` CLI session if you already pay for a subscription.',
   },
   {
-    key: 'auto · confirm · dry-run',
-    title: 'Three ways to run it',
-    body: 'Run immediately, ask `[y/N]` first, or print the command and do nothing. `auto` is the default.',
+    key: 'four ways to run',
+    title: 'Four ways to run it',
+    body: '`auto` runs the command immediately and is the default. `confirm` asks `[y/N]` every time, `confirm-destructive` asks on anything it doesn’t recognise as safe, and `--dry-run` prints the command and runs nothing.',
   },
 ];
 
@@ -64,7 +64,7 @@ const providers = [
 
 <Base
   title="smartly — tell your shell what you mean"
-  description="smartly turns a plain English sentence into one executable shell command. macOS and Linux, directory and git aware, four model providers, and auto-run by default."
+  description="smartly turns a plain English sentence into one executable shell command. macOS and Linux, directory and git aware, four model providers, and auto-run by default — with confirm and confirm-destructive modes when you want a gate."
   suffix={false}
 >
   <!-- ==================================================== hero -->
@@ -73,7 +73,7 @@ const providers = [
       <img
         class="hero__logo"
         src={withBase('/brand/smartly-logo-light.svg')}
-        alt="smartly"
+        alt="smartly >_"
         width="760"
         height="240"
         fetchpriority="high"
@@ -81,17 +81,21 @@ const providers = [
 
       <h1 class="hero__title">Tell your shell<br />what you mean.</h1>
 
-      <p class="hero__sub">You know what. Smartly knows how.</p>
+      <p class="hero__sub">You know what. smartly knows how.</p>
 
       <p class="hero__body">
-        smartly sends one plain English sentence to an LLM, sanitizes the reply
-        into a single shell command, and runs it. For people who know what they
-        want to do and would rather not remember the exact flags.
+        smartly sends one plain English sentence to an LLM, validates the reply
+        is a single shell command line, and runs it. For people who know what
+        they want to do and would rather not remember the exact flags.
       </p>
 
       <div class="hero__install">
         <p class="hero__install-label mono">Install</p>
         <InstallBlock size="lg" />
+        <p class="hero__next">
+          Then run <code>smartly onboard</code> to pick a provider, a model and
+          an execution mode.
+        </p>
       </div>
 
       <div class="hero__cta">
@@ -140,17 +144,16 @@ const providers = [
         <p class="safety__body safety__body--key">
           smartly generates a command and runs it immediately, with no
           confirmation prompt — including when that command is destructive.
-          There is no blocklist and no danger detector. Its sanitizer enforces
-          that the model returned exactly one clean command line; it makes no
-          judgement about what that line does.
+          Under <code>auto</code> nothing inspects what the command does; the
+          only check is that the model returned exactly one clean command line.
         </p>
         <p class="safety__body">
           That is the product working as intended, and it is the setting most
           worth reconsidering on a machine where a wrong <code>rm</code> costs you
-          something. Two ways to change it:
+          something. Three ways to change it:
         </p>
         <p>
-          <a href={withBase('/docs/execution-and-safety/')}
+          <a href={withBase('/docs/execution-and-safety/#execution-mode')}
             >Read the full execution and safety page</a
           >
         </p>
@@ -167,9 +170,34 @@ const providers = [
             terminal.
           </p>
           <div data-copyable>
-            <pre data-copy-label="config snippet"><code>{`# ~/.config/smartly/config.yaml
+            <pre data-copy-label="confirm config snippet"><code>{`# ~/.config/smartly/config.yaml
 execution:
   mode: confirm`}</code></pre>
+          </div>
+        </div>
+
+        <div class="safety__way">
+          <p class="safety__way-title">
+            <span class="safety__flag mono">confirm-destructive</span> Ask me
+            when it is not clearly safe
+          </p>
+          <p class="safety__way-body">
+            A local classifier reads the generated command and asks on anything
+            it doesn’t recognise as safe — destructive or unrecognised alike. A
+            best-effort seatbelt, not a sandbox: to see every command, use
+            <code>confirm</code>.
+          </p>
+          <p class="safety__way-body">
+            <a
+              href={withBase(
+                '/docs/execution-and-safety/#what-counts-as-destructive',
+              )}>What counts as destructive →</a
+            >
+          </p>
+          <div data-copyable>
+            <pre data-copy-label="confirm-destructive config snippet"><code>{`# ~/.config/smartly/config.yaml
+execution:
+  mode: confirm-destructive`}</code></pre>
           </div>
         </div>
 
@@ -195,11 +223,14 @@ execution:
     <div class="shell">
       <p class="eyebrow">Providers</p>
       <h2 id="providers-title" class="providers__title">
-        Four backends. Two ways to pay for them.
+        Four backends. Bring an API key or your existing CLI login.
       </h2>
       <p class="providers__lede lede">
-        Two providers call an API with a key. Two shell out to a CLI you are
-        already logged into — slower, but no second bill.
+        <code>anthropic</code> and <code>openai</code> call an API with your own
+        key. <code>claude-cli</code> and <code>codex-cli</code> shell out to a CLI
+        you are already logged into — slower, but no second bill. And
+        <code>openai</code> speaks to any OpenAI-compatible endpoint, including a
+        local vLLM, Ollama or LM Studio.
       </p>
 
       <div class="table-scroll providers__table">
@@ -296,6 +327,14 @@ execution:
     text-transform: uppercase;
     color: var(--ink-muted);
     margin-bottom: var(--s-2);
+  }
+
+  /* One line, not a second terminal block — the demo directly below already
+     owns that weight. */
+  .hero__next {
+    margin-top: var(--s-3);
+    font-size: 0.9375rem;
+    color: var(--ink-muted);
   }
 
   .hero__cta {
@@ -437,7 +476,7 @@ execution:
   /* ----------------------------------------------------------- providers */
   .providers__title {
     font-size: var(--step-4);
-    max-width: 18ch;
+    max-width: 24ch;
   }
 
   .providers__lede {

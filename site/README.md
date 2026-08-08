@@ -1,7 +1,8 @@
 # smartly website
 
-Landing page, documentation and brand guideline for the `smartly` CLI, published
-to GitHub Pages at <https://smartlycli.com/>.
+Landing page and documentation for the `smartly` CLI, published to GitHub Pages
+at <https://smartlycli.com/>. The brand guideline is deliberately not published
+here; it lives in [`docs/BRAND.md`](../docs/BRAND.md).
 
 Astro, static output, no client framework, no analytics, no third-party font
 requests.
@@ -78,7 +79,7 @@ site/
     ├── content/docs/       Documentation, one MDX file per page
     ├── layouts/            Base and DocLayout
     ├── lib/                nav.ts (information architecture), url.ts
-    ├── pages/              index, brand, 404, docs route, robots, search index
+    ├── pages/              index, 404, docs route, robots.txt, search index
     ├── scripts/site.ts     All client behaviour, ~7 kB
     └── styles/             tokens.css, global.css, prose.css
 ```
@@ -90,8 +91,17 @@ site/
 2. Add the slug to a group in [`src/lib/nav.ts`](./src/lib/nav.ts). That drives
    the sidebar, the drawer, previous/next and the search index.
 
-Documentation content must match the repository `README.md`, which is the source
-of truth for product behaviour.
+## Source of truth
+
+The Go code is the source of truth for product behaviour. This site is the
+reference manual; the repository `README.md` is the introduction that links
+here. So a change to behaviour — a new execution mode, a new config key, a
+changed default — lands in `internal/` first, and the docs here are updated
+against the code, not against the README.
+
+Copying the README instead is how the site once ended up documenting two
+execution modes for a CLI that shipped three, and claiming there was no
+destructive-command detector after one was added.
 
 ## Regenerating raster brand assets
 

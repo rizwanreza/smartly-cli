@@ -176,11 +176,12 @@ providers:
     binary: codex
 ```
 
-<Callout type="warn" title="One sanitizer, no salvage.">
-  Whatever the provider returns, smartly's strict single-line sanitizer is the
-  backstop: a response that is not one clean command line is rejected rather
-  than guessed at. That protects against a messy response, not against a clean
-  response that happens to be a destructive command.
+<Callout type="warn" title="One check, no salvage.">
+  Whatever the provider returns, smartly validates that the reply is a single
+  clean command line, and rejects anything else rather than guessing at it —
+  there is no "take the last line" recovery. That protects against a messy
+  response, not against a clean response that happens to be a destructive
+  command.
 </Callout>
 
 ## Choosing

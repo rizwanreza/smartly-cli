@@ -36,7 +36,7 @@ being zeroed.
 provider: anthropic          # anthropic | openai | claude-cli | codex-cli
 
 execution:
-  mode: auto                 # auto | confirm
+  mode: auto                 # auto | confirm | confirm-destructive
 
 context: light                # none | light | full
 
@@ -69,9 +69,10 @@ providers:
 
 <Callout type="warn" title="`execution.mode: auto` is the default.">
   The default configuration runs generated commands immediately, with no
-  confirmation prompt, including destructive ones. `execution.mode: confirm` is
-  the one-line change that puts a `[y/N]` gate in front of every command. See
-  [Execution and safety](/docs/execution-and-safety/).
+  confirmation prompt, including destructive ones. `execution.mode: confirm`
+  puts a `[y/N]` gate in front of every command; `confirm-destructive` asks on
+  anything it doesn't recognise as safe. See [Execution and
+  safety](/docs/execution-and-safety/).
 </Callout>
 
 ## Key settings
@@ -85,8 +86,13 @@ needs and how they differ.
 ### `execution.mode`
 
 `auto` runs the generated command immediately. `confirm` prints it and asks
-`[y/N]` first. Covered in [Execution and
+`[y/N]` first, every time. `confirm-destructive` asks on anything it doesn't
+recognise as safe — destructive or unrecognised alike — using a local
+best-effort classifier. Covered in [Execution and
 safety](/docs/execution-and-safety/#execution-mode).
+
+The value is matched exactly. A typo like `Confirm` is a config error, not a
+quiet fall back to `auto`.
 
 ### `context`
 

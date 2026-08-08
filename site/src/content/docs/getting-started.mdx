@@ -93,26 +93,36 @@ smartly show hidden files sorted by size
 
 ## Put a gate in front of it
 
-If you would rather approve every command, switch execution mode once and forget
-about it:
+Switch execution mode once and forget about it:
 
 ```bash
 smartly config init                              # writes a default config.yaml
 ```
 
-Then set `execution.mode` in that file:
+Then set `execution.mode` in that file. Two gates to choose between:
 
 ```yaml
 execution:
-  mode: confirm
+  mode: confirm              # ask before every command
 ```
 
-Now every request prints the command and waits for `[y/N]`. You can also force
-the prompt for a single call with `--confirm`, without changing any config. Both
-are covered in [Execution and safety](/docs/execution-and-safety/).
+```yaml
+execution:
+  mode: confirm-destructive  # ask on anything it doesn't recognise as safe
+```
+
+`confirm` prints every command and waits for `[y/N]`. `confirm-destructive` is
+the middle path: a local classifier reads the generated command and lets
+recognised-safe ones through, asking on everything else — destructive or
+unrecognised alike. It is a best-effort seatbelt, not a sandbox, so if you want
+to see every command, pick `confirm`.
+
+You can also force the prompt for a single call with `--confirm`, without
+changing any config. All of it is covered in [Execution and
+safety](/docs/execution-and-safety/).
 
 ## Next
 
 - [Usage](/docs/usage/) — how to phrase requests, and what smartly will and will not generate.
 - [Shell integration](/docs/shell-integration/) — required if you want a generated `cd` or `export` to affect your shell.
-- [Execution and safety](/docs/execution-and-safety/) — auto, confirm, dry-run, and what gets written to your history log.
+- [Execution and safety](/docs/execution-and-safety/) — auto, confirm, confirm-destructive, dry-run, what the classifier counts as destructive, and what gets written to your history log.

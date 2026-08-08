@@ -45,9 +45,10 @@ what is actually there. See
 
 <Callout type="warn" title="The command runs unless you say otherwise.">
   With the default `execution.mode: auto` there is no confirmation prompt. Use
-  `--dry-run` to see a command without running it, `--confirm` to be asked, or
-  set `execution.mode: confirm` to be asked every time. See [Execution and
-  safety](/docs/execution-and-safety/).
+  `--dry-run` to see a command without running it, `--confirm` to be asked
+  once, or set `execution.mode` to `confirm` to be asked every time — or to
+  `confirm-destructive`, which asks on anything it doesn't recognise as safe.
+  See [Execution and safety](/docs/execution-and-safety/).
 </Callout>
 
 ## Per-invocation flags

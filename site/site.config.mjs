@@ -34,7 +34,7 @@ function normaliseBase(value) {
 }
 
 /**
- * Shiki theme, derived from the Smartly palette rather than a stock theme.
+ * Shiki theme, derived from the smartly palette rather than a stock theme.
  * Four roles only: ink for commands, muted grey for comments and punctuation,
  * deep cyan for strings and paths, dark amber for flags and numbers. Every
  * foreground clears 4.5:1 against warm paper (#F4F1E8).

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Marketing, documentation and brand site for the smartly CLI.",
+  "description": "Marketing and documentation site for the smartly CLI.",
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",

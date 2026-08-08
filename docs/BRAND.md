@@ -8,7 +8,7 @@ commit that added this file) if it's ever needed again.
 
 ## Brand idea
 
-**You know what you want to happen. Smartly knows the incantation.**
+**You know what you want to happen. smartly knows the incantation.**
 
 Everything in the product is one exchange: a sentence goes in, a command
 comes out, and the command is right. The brand's job is to make that
@@ -29,7 +29,7 @@ that carry consequences.
 
 ### What it is not
 
-Not a magical assistant, not a copilot, not a teammate. Smartly does not
+Not a magical assistant, not a copilot, not a teammate. smartly does not
 have a personality of its own in the interface — it has good manners.
 Avoid anthropomorphic language, hype, and any suggestion that the model is
 infallible.
@@ -37,8 +37,8 @@ infallible.
 ## Taglines
 
 - **Primary: "Tell your shell what you mean."** — the headline wherever
-  Smartly is introduced. Sentence case, full stop included. Do not shorten.
-- **Supporting: "You know what. Smartly knows how."** — sits under the
+  smartly is introduced. Sentence case, full stop included. Do not shorten.
+- **Supporting: "You know what. smartly knows how."** — sits under the
   primary, never instead of it. This is the one permitted wink; do not add
   a second one nearby. Marketing surfaces only.
 
@@ -83,8 +83,8 @@ Where an image cannot go, the canonical text form is:
 smartly >_
 ```
 
-- Always lowercase. **Smartly** is the brand in prose; `smartly` is the
-  command and the logo.
+- Always lowercase — in the logo, in the command, and in prose. There is
+  no capitalised form of the name.
 - One space between the word and the `>_`.
 - Set in Geist Mono where the medium allows.
 - In color contexts: only the `>_` is electric cyan; the word stays in the
@@ -126,7 +126,7 @@ Rules:
   −0.035em).
 - **Geist Mono** — code, terminal, configuration, labels, metadata. 400
   code, 500 labels. Eyebrows/small labels are the only uppercase (11px,
-  0.14em tracking) — the only place Smartly shouts.
+  0.14em tracking) — the only place smartly shouts.
 - Self-host both faces; no third-party font requests, ever.
 - Anything a person would type or read in a terminal is Geist Mono;
   everything read as prose is Instrument Sans.
@@ -172,11 +172,17 @@ point, and it only has two sides.
 
 ### Naming
 
-- **Smartly** — the product, in prose and headlines.
-- **`smartly`** — the binary, the command, the text logo. Always
-  lowercase, always monospaced.
+- **smartly** — always lowercase. The product in prose, the binary, the
+  command, the text logo. Sentence-initial occurrences are lowercase too;
+  there is no capitalised form. `Smartly` is never correct.
+- **`smartly`** — monospaced whenever it is the command form: the binary,
+  an invocation, the text logo.
 - Providers are written as their config values: `anthropic`, `openai`,
   `claude-cli`, `codex-cli`.
+
+This is enforced in code, not just by convention: `internal/brand/brand_test.go:42`
+and `internal/cli/help_test.go:121` both assert that the string `Smartly`
+never appears in CLI output.
 
 ## In use
 

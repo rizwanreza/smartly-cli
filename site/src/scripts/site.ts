@@ -71,30 +71,6 @@ async function writeClipboard(text: string): Promise<boolean> {
   }
 }
 
-/**
- * Generic "copy this literal value" control — used by the brand page's colour
- * tokens and text logo. The element carries the value; the element with
- * [data-copy-feedback] inside it (or the element itself) shows the result.
- */
-function initValueCopy(): void {
-  document
-    .querySelectorAll<HTMLElement>('[data-copy-value]')
-    .forEach((button) => {
-      const feedback =
-        button.querySelector<HTMLElement>('[data-copy-feedback]') ?? button;
-      const original = feedback.textContent ?? '';
-      button.addEventListener('click', async () => {
-        const ok = await writeClipboard(button.dataset.copyValue ?? '');
-        feedback.textContent = ok ? 'Copied' : 'Press ⌘C';
-        button.dataset.copied = 'true';
-        window.setTimeout(() => {
-          feedback.textContent = original;
-          delete button.dataset.copied;
-        }, 1600);
-      });
-    });
-}
-
 /* ------------------------------------------------------------------ tabs */
 
 // Every [data-tabs="x"] group on the page shares one choice, remembered under
@@ -482,7 +458,6 @@ function initTocHighlight(): void {
 
 function boot(): void {
   initCopyButtons();
-  initValueCopy();
   initTabs();
   initDrawer();
   initSearch();

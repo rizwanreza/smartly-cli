@@ -1,8 +1,8 @@
 ---
 title: Execution and safety
-description: Auto-run is the default. Here is exactly what that means, how to add a confirmation gate or dry-run, and what smartly writes to your history log.
+description: Auto-run is the default. Here is exactly what that means, the three execution modes, what the local classifier behind confirm-destructive counts as destructive, and what smartly writes to your history log.
 eyebrow: Run
-lede: smartly runs generated commands immediately unless you tell it not to. This page is the honest version of what that means and what to do about it.
+lede: smartly runs generated commands immediately unless you tell it not to. This page is the honest version of what that means, what the classifier can and cannot see, and what to do about both.
 ---
 
 import Callout from '../../components/Callout.astro';
@@ -19,12 +19,19 @@ This is intentional. The product is "say what you want and it happens", and a
 prompt on every invocation defeats that. It is also the setting most worth
 reconsidering on a machine where a wrong `rm` costs you something.
 
-Three ways to change it, from most to least permanent:
+Four choices. The first three are the config value; the fourth is one call.
+
+| Choice | Effect |
+| --- | --- |
+| `execution.mode: auto` | Run it. No prompt. The default. |
+| `execution.mode: confirm` | Ask before every command. |
+| `execution.mode: confirm-destructive` | Ask on anything it doesn't recognise as safe — destructive or unrecognised alike. |
+| `--dry-run` | Print the command for this call. Ask nothing, run nothing. |
 
 ```yaml
 # ~/.config/smartly/config.yaml — every call, from now on
 execution:
-  mode: confirm
+  mode: confirm-destructive
 ```
 
 ```bash
@@ -34,22 +41,51 @@ smartly --dry-run remove every merged branch    # print it, run nothing
 
 ## Execution mode
 
+Three values, and nothing else. There is no normalisation: `Confirm` or
+`comfirm` in your config file is an error you will see on the next run, not a
+silent fall back to `auto`.
+
 ### `auto` (default)
 
 Generate and run immediately, no prompt.
 
 ### `confirm`
 
-Print the command and ask `[y/N]` before running it.
+Print the command and ask `[y/N]` before running it. Every command, whatever
+it is.
+
+```
+→ git worktree remove /Users/you/project-fix
+
+! Run this command? [y/N]
+```
+
+### `confirm-destructive`
+
+Run commands a local classifier recognises as safe. Stop and ask on everything
+else, with the reason it stopped:
+
+```
+→ rm -rf ./build
+
+! rm deletes files
+  Run it? [y/N]
+```
+
+"Everything else" includes commands the classifier does not recognise at all —
+see [What counts as destructive](#what-counts-as-destructive) before you rely
+on this mode.
+
+### The prompt itself
 
 The prompt reads from and writes to `/dev/tty` directly rather than stdin and
 stdout, so it works even when stdin is otherwise in use — including under the
 [shell wrapper](/docs/shell-integration/), which captures stdout.
 
 If no controlling terminal is available — CI, cron, a fully non-interactive
-pipe — confirm mode **fails closed**. It will not run the command, rather than
-hang or silently proceed. Use `-y`/`--yes` in those contexts if you genuinely
-want it to run.
+pipe — a mode that asks **fails closed**. It will not run the command, rather
+than hang or silently proceed. Use `-y`/`--yes` in those contexts if you
+genuinely want it to run.
 
 ## Per-invocation overrides
 
@@ -57,9 +93,11 @@ want it to run.
 | --- | --- |
 | `--confirm` | Force the `[y/N]` prompt for this call. |
 | `-y`, `--yes` | Force auto-run for this call. |
-| `--dry-run` | Print the command. Ask nothing, run nothing. |
+| `--dry-run` | Print the command, and what would have happened to it. Ask nothing, run nothing. |
 
-`--confirm` and `-y`/`--yes` are mutually exclusive.
+`--confirm` and `-y`/`--yes` are mutually exclusive. Both are decided before
+the configured mode is read, which is what makes the short version literally
+true: `--confirm` always asks, `-y` never asks.
 
 `--dry-run` is the one to reach for when you are unsure what a phrasing will
 produce. It is also the safest way to explore a new provider or model.
@@ -68,15 +106,70 @@ produce. It is also the safest way to explore a new provider or model.
 smartly --dry-run clean up everything in build that is older than a week
 ```
 
+It prints the command, then a note saying what the current mode would have
+done with it:
+
+```
+→ find ./build -mtime +7 -delete
+
+! would ask first — find -delete removes every match
+```
+
+The command goes to stdout and the note to stderr, so
+`smartly --dry-run … | pbcopy` still copies just the command.
+
+## What counts as destructive
+
+`confirm-destructive` is backed by a local static classifier. It reads the
+generated command string and nothing else — no filesystem checks, no `PATH`
+lookup, no subprocess, no second trip to the LLM. That is what makes it
+deterministic, and what keeps it free of the gap between checking a path and
+running against it.
+
+Every command gets one of three verdicts:
+
+| Verdict | Meaning | Examples | In `confirm-destructive` |
+| --- | --- | --- | --- |
+| `safe` | Recognised, and read-only or purely additive | `ls`, `grep`, `git status`, `mkdir` | Runs |
+| `destructive` | Recognised, and changes something | `rm`, `mv`, `chmod`, `git push`, `kubectl delete`, `sed -i`, `find … -delete`, `> file` | Asks |
+| `unknown` | Not recognised at all | `frobnicate --all`, `./deploy.sh`, `make build` | Asks |
+
+Four details worth knowing before you trust it:
+
+- **A pipeline is as risky as its worst segment.** Risk is the maximum over
+  the segments split on `|`, `&&`, `||`, `;` and `&`, so
+  `find . -name '*.log' | xargs rm` is destructive.
+- **`sudo` is destructive unconditionally**, including `sudo ls`. Escalating
+  to root is itself the thing worth confirming.
+- **`$(…)`, backticks, `eval` and `sh -c` are never better than `unknown`**,
+  even when the body reads as safe. Their contents are analysed too, and can
+  push the verdict to `destructive` — but what actually runs is decided at
+  expansion time, which a static reading cannot see.
+- **Unknown asks.** That is the deliberate part: a seatbelt that silently
+  passes what it doesn't recognise is worse than no seatbelt. The cost is
+  real — this mode will prompt for commands that are perfectly harmless, just
+  unrecognised.
+
+<Callout type="warn" title="This is a best-effort seatbelt, not a sandbox.">
+  It reads text, not intent, and false negatives are possible by construction:
+  an allowlisted tool coaxed into writing (`awk '{print > "f"}'`), or a binary
+  that is not in its tables at all, can pass as safe. If you want to see every
+  command before it runs, use `confirm`, not `confirm-destructive`.
+</Callout>
+
+Whatever the mode, the verdict is written to your [history log](#logging) —
+including on `auto`, where nothing ever stopped to ask.
+
 ## What smartly does not promise
 
-- It does not review the generated command for danger. There is no blocklist and
-  no destructive-command detector.
-- Its output sanitizer enforces that the response is exactly one clean command
-  line, and rejects anything else. That is a defence against a malformed model
-  response, not a judgement about what the command does.
-- It generates one command line. Pipes, `&&` and redirects inside that line are
-  fine, and are as consequential as anything else you would type.
+- The classifier is a seatbelt on `confirm-destructive`, not a review of what
+  the command will do. It recognises command shapes; it does not know what is
+  in the directory you are pointing at.
+- smartly generates one command line. Pipes, `&&` and redirects inside that
+  line are fine, and are as consequential as anything else you would type.
+- It validates that the model's reply is a single clean command line, and
+  rejects anything else rather than guessing. That is a defence against a
+  malformed model response, not a judgement about what the command does.
 
 If a request is one you would think twice about typing yourself, use
 `--dry-run` first.
@@ -85,12 +178,23 @@ If a request is one you would think twice about typing yourself, use
 
 Every generate-and-run invocation is appended to `log.path` as JSONL:
 
-- one `request` record — sentence, provider, model, generated command, outcome;
-- and once the command's exit code is known, a separate `completion` record,
-  correlated by `request_id`.
+- one `request` record — sentence, provider, model, generated command,
+  context level, outcome, `risk` verdict and duration;
+- and once the command's exit code is known, a separate `completion` record
+  carrying just `request_id` and `exit_code`.
 
 The log is append-only. Nothing is ever rewritten in place, and the file is
-created with `0600` permissions.
+created with `0600` permissions. Records are data only — no symbols, no
+colour, nothing shaped for a terminal.
+
+The `risk` field is the classifier's verdict, `safe`, `destructive` or
+`unknown`. It is recorded on every request whatever your execution mode is,
+so running on `auto` still leaves you an audit trail of what ran without
+asking:
+
+```bash
+jq 'select(.type == "request" and .risk == "destructive") | .command' ~/.config/smartly/history.log
+```
 
 <Callout type="warn" title="The log stores your sentences and commands verbatim.">
   That may include anything sensitive you typed. Treat the history log like

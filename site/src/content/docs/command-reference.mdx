@@ -25,15 +25,17 @@ smartly config init|show|path
 | `--context` | string | Override the configured context level: `none`, `light`, `full`. |
 | `--confirm` | bool | Force a confirmation prompt for this call. |
 | `-y`, `--yes` | bool | Force auto-run for this call. |
-| `--dry-run` | bool | Show the generated command without asking or running it. |
+| `--dry-run` | bool | Show the generated command, and what the current mode would have done with it, without asking or running it. |
 | `--print-only` | bool | Internal. Used by the shell wrapper, not meant for manual use. |
 | `--record-exit` | int | Internal. Used by the shell wrapper, not meant for manual use. |
 
-`--confirm` and `-y`/`--yes` are mutually exclusive.
+`--confirm` and `-y`/`--yes` are mutually exclusive. Both are decided before
+the configured `execution.mode` is read.
 
 <Callout type="warn" title="Without --dry-run or --confirm, the command runs.">
-  The default `execution.mode` is `auto`. See [Execution and
-  safety](/docs/execution-and-safety/).
+  The default `execution.mode` is `auto`. Set `confirm` to be asked every time,
+  or `confirm-destructive` to be asked on anything smartly doesn't recognise as
+  safe. See [Execution and safety](/docs/execution-and-safety/).
 </Callout>
 
 ## Subcommands
@@ -62,7 +64,7 @@ or `~/.config/smartly/config.yaml` if `XDG_CONFIG_HOME` is unset.
 | Key | Values | Default |
 | --- | --- | --- |
 | `provider` | `anthropic`, `openai`, `claude-cli`, `codex-cli` | `anthropic` |
-| `execution.mode` | `auto`, `confirm` | `auto` |
+| `execution.mode` | `auto`, `confirm`, `confirm-destructive` | `auto` |
 | `context` | `none`, `light`, `full` | `light` |
 | `log.path` | path | `~/.config/smartly/history.log` |
 | `providers.anthropic.model` | string | `claude-opus-5` |
@@ -99,6 +101,9 @@ See [how keys are resolved](/docs/configuration/#how-api-keys-are-resolved).
   redirects within that line are fine; multi-step scripts are not.
 - Targets bash and zsh on Linux and macOS. Windows and PowerShell are not
   supported yet.
+- The classifier behind `confirm-destructive` is a best-effort seatbelt, not a
+  sandbox. False negatives are possible. See [What counts as
+  destructive](/docs/execution-and-safety/#what-counts-as-destructive).
 - The OpenAI provider ships with no default model — you must set
   `providers.openai.model` yourself.
 - `claude-cli` and `codex-cli` require the respective CLI installed and
