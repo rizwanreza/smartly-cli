@@ -16,9 +16,9 @@
     "astro": "astro"
   },
   "dependencies": {
-    "@astrojs/mdx": "^7.0.5",
+    "@astrojs/mdx": "^7.0.8",
     "@astrojs/sitemap": "^3.7.3",
-    "astro": "^7.2.0",
+    "astro": "^7.2.6",
     "github-slugger": "^2.0.0"
   },
   "devDependencies": {
