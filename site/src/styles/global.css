@@ -41,6 +41,10 @@ body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   font-synthesis-weight: none;
+  /* Geist Mono's standard `liga` carries coding ligatures (--, ->, ||, >>)
+     that redraw shell syntax — `--` even overlaps the space before it. Set
+     here rather than per mono rule so every component inherits it. */
+  font-variant-ligatures: none;
 }
 
 img,
