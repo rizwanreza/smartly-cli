@@ -16,7 +16,7 @@ const capabilities = [
   {
     key: 'macos + linux',
     title: 'Knows which userland it is on',
-    body: "It accounts for GNU versus BSD differences, so the same request produces `sed -i ''` on macOS and `sed -i` on Linux.",
+    body: "It checks whether `sed`, `date`, `stat` and friends are GNU or BSD on your machine — a Mac with Homebrew coreutils has both — and writes flags that work with the ones you have: `sed -i ''` for BSD, `date -d` for GNU.",
   },
   {
     key: 'dir + git',
@@ -32,6 +32,11 @@ const capabilities = [
     key: 'four ways to run',
     title: 'Four ways to run it',
     body: '`auto` runs the command immediately and is the default. `confirm` asks `[y/N]` every time, `confirm-destructive` asks on anything it doesn’t recognise as safe, and `--dry-run` prints the command and runs nothing.',
+  },
+  {
+    key: 'learn mode',
+    title: 'Shows how the command works',
+    body: '`--learn` prints the command, then breaks it down piece by piece: each flag, pipe and argument with what it does, colour-matched to the command above. Nothing runs.',
   },
 ];
 
@@ -52,19 +57,19 @@ const providers = [
   {
     name: 'claude-cli',
     auth: 'Your logged-in claude session',
-    note: 'No tool access at all. Model is required in config.',
+    note: 'No API key: uses your Claude subscription. No tool access at all.',
   },
   {
     name: 'codex-cli',
     auth: 'Your logged-in codex session',
-    note: 'Runs --sandbox read-only, but is still agentic while composing.',
+    note: 'No API key: uses your ChatGPT subscription. Runs --sandbox read-only.',
   },
 ];
 ---
 
 <Base
   title="smartly — tell your shell what you mean"
-  description="smartly turns a plain English sentence into one executable shell command. macOS and Linux, directory and git aware, four model providers, and auto-run by default — with confirm and confirm-destructive modes when you want a gate."
+  description="smartly turns a plain English sentence into one executable shell command. macOS and Linux, directory and git aware, four model providers, a --learn mode that explains the command, and auto-run by default — with confirm and confirm-destructive modes when you want a gate."
   suffix={false}
 >
   <!-- ==================================================== hero -->
