@@ -1,8 +1,8 @@
 ---
 title: Getting started
-description: Install smartly, set an API key, and run your first request. Covers what happens on that first run, including auto-run.
+description: Install smartly, connect it to an API key or your Claude or ChatGPT subscription, and run your first request. Covers what happens on that first run, including auto-run.
 eyebrow: Start here
-lede: Install the binary, set one environment variable, and say what you want. There is no project setup and no config file to write.
+lede: Install the binary, point it at a model, and say what you want. There is no project setup and no config file to write.
 ---
 
 import Callout from '../../components/Callout.astro';
@@ -13,9 +13,10 @@ import Transform from '../../components/Transform.astro';
 
 - **macOS or Linux**, running bash or zsh. Windows and PowerShell are not supported yet.
 - **Homebrew**, or **Go** if you would rather build the binary yourself.
-- **An `ANTHROPIC_API_KEY`**, because smartly defaults to `provider: anthropic`.
-  If you would rather use an existing Claude or ChatGPT subscription, or OpenAI,
-  see [Providers](/docs/providers/).
+- **Either an `ANTHROPIC_API_KEY`**, which the default `provider: anthropic`
+  uses, **or a logged-in `claude` or `codex` CLI**, which uses your Claude or
+  ChatGPT subscription and needs no API key. OpenAI and compatible APIs are
+  covered in [Providers](/docs/providers/).
 
 ## Install
 
@@ -51,7 +52,11 @@ export PATH="$PATH:$(go env GOPATH)/bin"   # add to ~/.bashrc
 Prebuilt binaries for macOS and Linux are also on the
 [releases page](https://github.com/rizwanreza/smartly-cli/releases).
 
-## Set your API key
+## Connect a model
+
+Pick one. Either way, nothing else is required.
+
+### With an API key
 
 Out of the box smartly needs only this. No config file is required.
 
@@ -67,6 +72,32 @@ export ANTHROPIC_API_KEY="sk-ant-..."   # add to ~/.bashrc
 ```
   </Fragment>
 </Platform>
+
+### With your Claude or ChatGPT subscription
+
+No API key needed. If you're logged into Claude Code or Codex, including on a
+seat your company provides, smartly shells out to that session. Log in first if
+you haven't:
+
+```bash
+claude login    # or: codex login
+```
+
+Then run `smartly config init` and set the provider in the `config.yaml` it
+writes:
+
+```yaml
+provider: claude-cli     # or codex-cli
+
+providers:
+  claude-cli:
+    model: haiku         # required for claude-cli
+```
+
+Or skip the config and pass it for one call with
+`--provider claude-cli --model haiku`. `smartly onboard` walks through the same
+choice. Each request spawns a CLI process, so it is slower than an API key;
+the full tradeoffs are in [Providers](/docs/providers/#cli-backed-providers).
 
 ## Your first command
 

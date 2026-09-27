@@ -49,6 +49,21 @@ page](https://github.com/rizwanreza/smartly-cli/releases).
 Out of the box smartly uses `provider: anthropic`, so it needs only
 `ANTHROPIC_API_KEY` set in your environment. No config file is required.
 
+**No API key? Use your subscription.** If you're logged into Claude Code
+(`claude`) or Codex (`codex`) on a Claude Pro/Max, ChatGPT Plus/Pro or
+company-provided seat, smartly can shell out to that session instead:
+
+```yaml
+# ~/.config/smartly/config.yaml
+provider: claude-cli    # or codex-cli
+providers:
+  claude-cli:
+    model: haiku
+```
+
+Or try it for one call with `smartly --provider claude-cli --model haiku …`.
+See [Providers](#providers) for the tradeoffs.
+
 ## `smartly onboard`
 
 To be walked through the settings, run `smartly onboard`. It asks which
@@ -57,6 +72,7 @@ environment it gets to see, then shows you the whole config before writing
 anything. **It never asks for an API key** — it checks whether the
 environment variable is set and prints the `export …` line if it isn't; no
 key value is typed into it, shown by it, or written to `config.yaml` by it.
+For `claude-cli` and `codex-cli` it checks the CLI is on your `PATH` instead.
 It never edits your rc file, backs up an existing config first, writes
 nothing until you confirm, and fails closed with no terminal. You don't need
 it: smartly runs on defaults with `ANTHROPIC_API_KEY` set.
@@ -222,8 +238,8 @@ destructive](https://smartlycli.com/docs/execution-and-safety/#what-counts-as-de
 |---|---|---|
 | `anthropic` | `ANTHROPIC_API_KEY` | The default. Nothing else to set up. |
 | `openai` | `OPENAI_API_KEY` | No default model — set `providers.openai.model` yourself. |
-| `claude-cli` | your `claude` login | Shells out to the CLI you're already paying for. |
-| `codex-cli` | your `codex` login | Same, via `codex`. |
+| `claude-cli` | your `claude` login | No API key. Uses your Claude subscription via the CLI. |
+| `codex-cli` | your `codex` login | No API key. Uses your ChatGPT subscription via the CLI. |
 
 The `openai` provider is not limited to OpenAI: it speaks the Chat
 Completions API, so `base_url` plus `api_key_env` points it at Fireworks,
