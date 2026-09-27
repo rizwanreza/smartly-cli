@@ -63,6 +63,7 @@ These override configuration for a single call and change nothing on disk.
 | `--confirm` | Force the `[y/N]` prompt, whatever the configured mode. |
 | `-y`, `--yes` | Force auto-run, whatever the configured mode. |
 | `--dry-run` | Print the command. Ask nothing, run nothing. |
+| `--learn` | Break the command down piece by piece. Run nothing. Also `--explain`, `--teach`. |
 
 `--confirm` and `-y`/`--yes` are mutually exclusive.
 
@@ -71,6 +72,35 @@ smartly --provider codex-cli --context none show me disk usage by directory
 smartly --dry-run delete all my branches that are already merged into main
 smartly --confirm kill whatever is listening on port 3000
 ```
+
+## Learning from the command
+
+`--learn` shows how smartly got from your sentence to the command: a one-line
+summary, then each piece with what it does. Nothing runs.
+
+```text
+$ smartly --learn find files over 100mb changed this week
+→ find . -type f -size +100M -mtime -7
+
+  Finds files over 100 MB changed in the last week, from here down.
+
+  find .       search from the current directory down
+  -type f      files only, skip directories
+  -size +100M  larger than 100 MB
+  -mtime -7    modified in the last 7 days
+```
+
+In a color terminal each piece is tinted by what it is: the command in bold,
+flags blue, quoted text cyan, operators such as `|` and `>` magenta. The same
+piece is the same color on the `→` line and in the breakdown, so you can match
+them at a glance. The colors come from your terminal's own palette, and a key
+underneath says which is which. With `NO_COLOR` set, the words carry it alone.
+
+The command is generated exactly as it would be without the flag. The breakdown
+is a second model call, which takes a little longer, and it is the model's
+reading of the command, so check anything surprising against `man`.
+
+`--explain` and `--teach` are the same flag.
 
 ## Trying a provider without committing to it
 

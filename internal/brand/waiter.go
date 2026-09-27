@@ -48,6 +48,11 @@ func Thinking(p *Printer) *Waiter {
 	return NewWaiter(p, DefaultWaitDelay, p.WaitingLine())
 }
 
+// Explaining returns the waiting state for --learn's explanation call.
+func Explaining(p *Printer) *Waiter {
+	return NewWaiter(p, DefaultWaitDelay, p.ExplainingLine())
+}
+
 // Start arms the waiter. It returns immediately; nothing is written unless
 // the delay elapses before Stop is called.
 func (w *Waiter) Start() {

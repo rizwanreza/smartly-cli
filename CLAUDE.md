@@ -44,6 +44,7 @@ Four backends implement `Provider`, selected by `NewFromConfig` on `cfg.Provider
 
 - `Sanitize` hard-rejects embedded newlines. No "take the last line" salvage — an unclean response is a contract violation.
 - The confirm gate uses `/dev/tty` directly, never stdin/stdout (stdin may be consumed by the wrapper's command substitution), and fails closed with no controlling terminal.
+- `--learn` (normalized aliases `--explain`/`--teach`) branches after `Classify`: a second `Generate` call explains the already-sanitized command, rendered to stderr by `renderLearn`. It never executes and writes nothing to stdout, which is what keeps the wrapper from eval'ing anything. The explanation is display-only, so `ParseExplanation` is tolerant of packaging but strips control characters. Role colors are in `internal/brand/learn.go`, and `highlight.go` is a display tokenizer deliberately separate from the classifier's lexer.
 - `execution.mode: auto` is intentional product behavior, not a missing safety check. Read the README's "Auto-run is the default" callout before adding friction.
 
 ### Classifier (`internal/classify`)

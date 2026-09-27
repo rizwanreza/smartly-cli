@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	"github.com/rizwanreza/smartly-cli/internal/brand"
 	"github.com/rizwanreza/smartly-cli/internal/classify"
@@ -25,6 +26,10 @@ import (
 
 const maxOutputTokens = 512
 
+// maxExplainTokens bounds --learn's explanation call, which returns a small
+// JSON breakdown rather than one command line.
+const maxExplainTokens = 1024
+
 // Version is set via -ldflags at release build time (see .goreleaser.yaml);
 // it stays "dev" for local `go build`/`go install` builds.
 var Version = "dev"
@@ -36,6 +41,7 @@ var (
 	confirmFlag    bool
 	yesFlag        bool
 	dryRunFlag     bool
+	learnFlag      bool
 	printOnlyFlag  bool
 	recordExitCode int
 )
@@ -65,10 +71,22 @@ func init() {
 	rootCmd.Flags().BoolVar(&confirmFlag, "confirm", false, "always ask before running, whatever execution.mode says")
 	rootCmd.Flags().BoolVarP(&yesFlag, "yes", "y", false, "never ask before running, whatever execution.mode says")
 	rootCmd.Flags().BoolVar(&dryRunFlag, "dry-run", false, "show what would run, without asking or running it")
+	rootCmd.Flags().BoolVar(&learnFlag, "learn", false, "explain the generated command piece by piece; never runs it (aliases --explain, --teach)")
+	rootCmd.Flags().SetNormalizeFunc(normalizeFlagName)
 	rootCmd.Flags().BoolVar(&printOnlyFlag, "print-only", false, "internal: print the sanitized command to stdout only (used by the shell wrapper)")
 	rootCmd.Flags().IntVar(&recordExitCode, "record-exit", -1, "internal: record the exit code of a wrapper-executed command")
 	rootCmd.MarkFlagsMutuallyExclusive("confirm", "yes")
 	installHelp(rootCmd)
+}
+
+// normalizeFlagName makes --explain and --teach spellings of --learn: one
+// flag, three names, so there is no way for them to drift apart.
+func normalizeFlagName(_ *pflag.FlagSet, name string) pflag.NormalizedName {
+	switch name {
+	case "explain", "teach":
+		return "learn"
+	}
+	return pflag.NormalizedName(name)
 }
 
 // errNoRequest replaces cobra's "requires at least 1 arg(s), only received 0"
@@ -193,6 +211,13 @@ func runRoot(cmd *cobra.Command, args []string) error {
 	verdict := classify.Classify(command)
 	rec.Risk = verdict.Risk.String()
 
+	if learnFlag {
+		// Learn mode never runs anything, and writes nothing to stdout: under
+		// the shell wrapper an empty stdout is what makes it eval nothing.
+		err := runLearn(cmd, out, p, sentence, command, info)
+		return fail(logging.OutcomeDeclined, "learn", err)
+	}
+
 	if dryRunFlag {
 		// stdout carries the command and nothing else: --dry-run is
 		// routinely piped, and a prefix or an escape sequence here would
@@ -285,6 +310,56 @@ func runRoot(cmd *cobra.Command, args []string) error {
 	if exitCode != 0 {
 		os.Exit(exitCode)
 	}
+	return nil
+}
+
+// runLearn makes the second, explanation call for a command that has
+// already been generated, sanitized and classified exactly as a normal run
+// would — so what the reader learns from is what smartly would have run —
+// and renders the breakdown to stderr.
+//
+// The command is printed before the explanation is asked for, so the reader
+// has the answer after one call rather than two — and gets to guess what
+// each piece does before being told, which is the part that sticks.
+func runLearn(cmd *cobra.Command, out *brand.Printer, p provider.Provider, sentence, command string, info *appcontext.Info) error {
+	out.Println(renderLearnCommand(out, command))
+	out.Println("")
+
+	system, user := prompt.BuildExplain(sentence, command, info)
+
+	ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt)
+	waiter := brand.Explaining(out)
+	waiter.Start()
+	result, err := p.Generate(ctx, provider.GenerateRequest{
+		SystemPrompt: system,
+		UserPrompt:   user,
+		MaxTokens:    maxExplainTokens,
+	})
+	waiter.Stop()
+	// Read before stop(): stop cancels the context itself.
+	interrupted := ctx.Err() != nil && cmd.Context().Err() == nil
+	stop()
+
+	if err != nil && interrupted {
+		// Ctrl-C while explaining: the reader already has the command and
+		// chose not to wait for the rest. That is a normal way out, not a
+		// failure to report.
+		return errInterrupted
+	}
+
+	var exp prompt.Explanation
+	if err == nil {
+		exp, err = prompt.ParseExplanation(result.RawText)
+		if err != nil {
+			err = newCLIError("The model's explanation could not be shown.", err.Error())
+		}
+	}
+	if err != nil {
+		// The command is already on screen above; only the failure is owed.
+		return err
+	}
+
+	out.Println(renderLearnBody(out, command, exp, learnWidth()))
 	return nil
 }
 

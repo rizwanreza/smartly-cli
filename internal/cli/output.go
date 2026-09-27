@@ -51,7 +51,8 @@ func printLogWarning(p *brand.Printer, err error) {
 //	× No Anthropic API key found.
 //	  Set ANTHROPIC_API_KEY, or choose another provider with --provider.
 func printError(w io.Writer, err error) {
-	if err == nil {
+	var q *quietError
+	if err == nil || errors.As(err, &q) {
 		return
 	}
 	p := brand.NewAuto(w, nil)
@@ -73,6 +74,25 @@ func errorParts(err error) (message, hint string) {
 		return cErr.message, cErr.hint
 	}
 	return err.Error(), ""
+}
+
+// errInterrupted ends a run the user stopped on purpose, with the shell's
+// conventional 128+SIGINT status and no message: they already know.
+var errInterrupted = &quietError{code: 130}
+
+// quietError is an exit status with nothing to report.
+type quietError struct{ code int }
+
+func (e *quietError) Error() string { return fmt.Sprintf("exit status %d", e.code) }
+
+// ExitCode is the process exit status for an error Execute returned: a
+// quiet error's own code, otherwise 1.
+func ExitCode(err error) int {
+	var q *quietError
+	if errors.As(err, &q) {
+		return q.code
+	}
+	return 1
 }
 
 // cliError is smartly's own failure with an actionable next step, for the

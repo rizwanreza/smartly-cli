@@ -183,6 +183,13 @@ func TestStackedStatusSymbolsAlign(t *testing.T) {
 	}
 }
 
+func TestExplainingLine(t *testing.T) {
+	p := New(&bytes.Buffer{}, Capability{})
+	if got, want := p.ExplainingLine(), "smartly >_ explaining"; got != want {
+		t.Errorf("ExplainingLine() = %q, want %q", got, want)
+	}
+}
+
 func TestWaitingLine(t *testing.T) {
 	p, _ := plain()
 	if got, want := p.WaitingLine(), "smartly >_ thinking"; got != want {

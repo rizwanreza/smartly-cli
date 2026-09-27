@@ -32,11 +32,14 @@ Examples:
   smartly what changed in this repo in the last week
   smartly --confirm kill whatever is listening on port 3000
   smartly --dry-run delete all my branches that are already merged into main
+  smartly --learn find files over 100mb changed this week
 
 Execution:
       --confirm          ask before running the generated command
   -y, --yes              run without asking, even if execution.mode is confirm
       --dry-run          print the generated command instead of running it
+      --learn            explain the command piece by piece; never runs it
+                         (also --explain, --teach)
 
 Context:
       --context string   how much of your environment to send: none|light|full

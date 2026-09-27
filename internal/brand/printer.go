@@ -25,6 +25,13 @@ type Printer struct {
 	amber lipgloss.Style
 	red   lipgloss.Style
 
+	// --learn role styles; see learn.go.
+	program  lipgloss.Style
+	flag     lipgloss.Style
+	str      lipgloss.Style
+	operator lipgloss.Style
+	muted    lipgloss.Style
+
 	// mu serializes writes so a waiting line can never be interleaved with,
 	// or left dangling in front of, real output.
 	mu sync.Mutex
@@ -49,6 +56,12 @@ func New(w io.Writer, capability Capability) *Printer {
 		cyan:  r.NewStyle().Foreground(lipgloss.Color(ColorCyan)),
 		amber: r.NewStyle().Foreground(lipgloss.Color(ColorAmber)),
 		red:   r.NewStyle().Foreground(lipgloss.Color(ColorRed)),
+
+		program:  r.NewStyle().Bold(true),
+		flag:     r.NewStyle().Foreground(roleFlagColor),
+		str:      r.NewStyle().Foreground(roleStringColor),
+		operator: r.NewStyle().Foreground(roleOperatorColor),
+		muted:    r.NewStyle().Faint(true),
 	}
 }
 
@@ -115,7 +128,17 @@ func (p *Printer) status(symbol, message string, details []string) string {
 
 // WaitingLine renders the single-line waiting state: `smartly >_ thinking`.
 func (p *Printer) WaitingLine() string {
-	return p.Logo() + " " + WaitingLabel
+	return p.waitingLineFor(WaitingLabel)
+}
+
+// ExplainingLine renders --learn's second waiting state:
+// `smartly >_ explaining`.
+func (p *Printer) ExplainingLine() string {
+	return p.waitingLineFor(ExplainingLabel)
+}
+
+func (p *Printer) waitingLineFor(label string) string {
+	return p.Logo() + " " + label
 }
 
 // Println writes a line to the Printer's writer, holding the lock that keeps

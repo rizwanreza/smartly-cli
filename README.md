@@ -210,6 +210,26 @@ Per invocation: `--confirm` forces the prompt, `-y`/`--yes` forces auto-run
 have happened to it, without asking or running it. Full behavior at
 [Execution mode](https://smartlycli.com/docs/execution-and-safety/#execution-mode).
 
+`--learn` (or `--explain`, `--teach`) never runs anything either. It shows the
+command, then breaks it down piece by piece:
+
+```
+$ smartly --learn find files over 100mb changed this week
+→ find . -type f -size +100M -mtime -7
+
+  Finds files over 100 MB changed in the last week, from here down.
+
+  find .       search from the current directory down
+  -type f      files only, skip directories
+  -size +100M  larger than 100 MB
+  -mtime -7    modified in the last 7 days
+```
+
+In a color terminal each piece is tinted by what it is (command, flag,
+quoted text, operator), the same on both lines. It costs a second model
+call, and the explanation comes from the model, so treat it as a good first
+read rather than the man page.
+
 #### What counts as destructive
 
 `confirm-destructive` uses a local static classifier. It reads the generated

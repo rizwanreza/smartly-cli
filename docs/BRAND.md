@@ -119,6 +119,25 @@ Rules:
   for that and are documented, not improvised: `#006473` (cyan text on
   warm paper) and `#8A5200` (amber-family text).
 
+### Learn-mode role colors (CLI only)
+
+`--learn` is the one place the CLI colors text by what it *is* rather than by
+the three meanings above. It uses the terminal's own ANSI palette (so it
+follows the user's theme), scoped to that output only:
+
+| Role | Style |
+|---|---|
+| Command in command position | bold, default foreground |
+| Flag | ANSI blue |
+| Quoted text | ANSI cyan |
+| Operator / redirect | ANSI magenta |
+| Meaning column | faint |
+
+The same piece gets the same color on the `→` line and in the breakdown, which
+is what makes the colors useful for learning. Red and yellow stay out, because
+a flag is neither a failure nor a consequence. Every role is also said in words,
+so nothing depends on color alone. It lives in `internal/brand/learn.go`.
+
 ## Typography
 
 - **Instrument Sans** — interface, editorial, headlines. 400 body, 500

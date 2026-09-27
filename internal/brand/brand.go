@@ -87,3 +87,8 @@ const continuationIndent = "  "
 // WaitingLabel is the word appended to the logo while a request is in
 // flight: `smartly >_ thinking`.
 const WaitingLabel = "thinking"
+
+// ExplainingLabel is the waiting word for --learn's second call, once the
+// command is already on screen: `smartly >_ explaining`. It names what
+// smartly is doing rather than claiming the model understands anything.
+const ExplainingLabel = "explaining"

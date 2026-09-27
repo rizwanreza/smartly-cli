@@ -33,10 +33,11 @@ func TestCanonicalIdentity(t *testing.T) {
 // rejects: `Smartly`, `SMARTLY`, and the `smartly›` chevron variant.
 func TestNoAlternativeWordmarks(t *testing.T) {
 	surfaces := map[string]string{
-		"Logo":         Logo,
-		"Tagline":      Tagline,
-		"Description":  Description,
-		"WaitingLabel": WaitingLabel,
+		"Logo":            Logo,
+		"Tagline":         Tagline,
+		"Description":     Description,
+		"WaitingLabel":    WaitingLabel,
+		"ExplainingLabel": ExplainingLabel,
 	}
 
 	rejected := []string{"Smartly", "SMARTLY", "smartly›", "›"}
