@@ -14,6 +14,25 @@ const (
 	defaultClaudeCLIMaxBudgetUSD = 0.50
 )
 
+// claudeCLIEnv is set on the claude child process only — never exported to
+// smartly's own process or the user's shell. Both entries are speed, and
+// both were measured:
+//
+//   - MAX_THINKING_TOKENS=0: Claude Code enables extended thinking by
+//     default, even with --safe-mode and no tools. On a --learn explanation
+//     haiku spent ~1,600–5,800 thinking tokens and 18–55s on a ~180-token
+//     answer; with thinking off, 2.3s. This is the claude-cli counterpart of
+//     the anthropic provider's explicit `thinking: disabled`.
+//   - CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1: skips the update check,
+//     telemetry and error reporting a fresh `claude` process does at startup
+//     (~6.4s → ~4.2s median per request). Auth is essential traffic, so the
+//     OAuth login still works; --bare would be faster still but refuses
+//     OAuth, which is the point of this provider.
+var claudeCLIEnv = []string{
+	"MAX_THINKING_TOKENS=0",
+	"CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1",
+}
+
 type claudeCLIProvider struct {
 	binary       string
 	model        string
@@ -76,7 +95,7 @@ func (p *claudeCLIProvider) Generate(ctx context.Context, req GenerateRequest) (
 	defer cancel()
 
 	args := buildClaudeArgs(p.model, p.maxBudgetUSD, req)
-	stdout, stderr, runErr := runCLI(ctx, p.binary, args)
+	stdout, stderr, runErr := runCLI(ctx, p.binary, args, claudeCLIEnv)
 	if runErr != nil {
 		if tErr := timeoutError("claude", ctx.Err()); tErr != nil {
 			return nil, tErr

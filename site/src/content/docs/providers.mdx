@@ -132,7 +132,10 @@ with an actionable error rather than silently falling back to an API key.
 These are real and worth knowing before you switch:
 
 - **Slower.** Every request spawns a full CLI process, not a lightweight API
-  call.
+  call. For `claude-cli`, smartly turns off Claude Code's default extended
+  thinking and its startup update and telemetry checks, for that process only,
+  so a `haiku` request typically takes one to two seconds. Your own Claude Code
+  sessions and your shell are unaffected.
 - **Heuristic error classification.** Without HTTP status codes, failures
   (authentication versus anything else) are detected from the exit code plus
   substring-matching on the CLI's own text output, not a precise typed error

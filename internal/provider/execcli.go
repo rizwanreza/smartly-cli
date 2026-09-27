@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 	"syscall"
@@ -42,9 +43,14 @@ const pipeCloseGracePeriod = 5 * time.Second
 // post-Run kill below is what actually stops it from running forever in
 // the background. Kill errors are ignored: ESRCH (group already gone) is
 // the common, expected case.
-func runCLI(ctx context.Context, binary string, args []string) (stdout, stderr []byte, err error) {
+//
+// extraEnv is added to the child's environment only — never to smartly's
+// own process or the user's shell — so a provider can tune its CLI for a
+// one-shot call without the user exporting anything.
+func runCLI(ctx context.Context, binary string, args, extraEnv []string) (stdout, stderr []byte, err error) {
 	cmd := exec.CommandContext(ctx, binary, args...)
 	cmd.Stdin = nil
+	cmd.Env = childEnv(os.Environ(), extraEnv)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	cmd.WaitDelay = pipeCloseGracePeriod
 
@@ -58,6 +64,17 @@ func runCLI(ctx context.Context, binary string, args []string) (stdout, stderr [
 	}
 
 	return outBuf.Bytes(), errBuf.Bytes(), err
+}
+
+// childEnv is the environment a CLI provider's child runs with: smartly's
+// own, plus extra. With no extra it returns nil, which exec.Cmd treats as
+// "inherit unchanged". Extra entries are appended, and for a duplicate key
+// exec uses the last value, so extra wins.
+func childEnv(base, extra []string) []string {
+	if len(extra) == 0 {
+		return nil
+	}
+	return append(append([]string(nil), base...), extra...)
 }
 
 // timeoutError returns nil unless ctxErr is (wraps) context.DeadlineExceeded,
