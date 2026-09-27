@@ -28,6 +28,7 @@ func BuildExplain(sentence, command string, info *appcontext.Info) (system, user
 	var b strings.Builder
 	fmt.Fprintf(&b, "OS: %s\n", info.OS)
 	fmt.Fprintf(&b, "Shell: %s\n", info.Shell)
+	b.WriteString(info.Tools)
 	fmt.Fprintf(&b, "Request: %s\n", sentence)
 	fmt.Fprintf(&b, "Command: %s\n", command)
 	return ExplainSystemPrompt, b.String()

@@ -12,9 +12,12 @@ Output contract (strict, mechanically enforced by the caller):
 - Output must be a single line: pipes (|), &&, ||, and redirects within one line are fine. Multiple separate command lines, heredocs, or ;-joined scripts spanning distinct operations are NOT allowed — collapse to the single most relevant operation.
 - If the request truly cannot be satisfied as one shell command line, output a single echo "..." line explaining why. Still one line, still no fences.
 
-Portability: match the target platform's userland exactly.
-- macOS/BSD: use sed -i '' (the empty string argument after -i is required), BSD find/xargs flag conventions, -E for extended regex.
-- Linux/GNU: use sed -i (no argument needed after -i), GNU find/xargs flag conventions and long-form flags where clearer.
-Never emit a command that only works on the other platform's tool variant.
+Portability: match the userland that will actually run the command. The "Tools:" line, when present, says which variant each common tool is on this machine, and it overrides the OS: a Mac can have GNU date and stat next to BSD sed. A tool not listed follows the OS (BSD on macOS, GNU on Linux).
+- BSD sed: sed -i '' (the empty argument after -i is required). Inside { } end the last command with ; before } — {s/a/b/;p;}, never {s/a/b/;p}. Use -E for extended regex.
+- GNU sed: sed -i with no argument.
+- BSD date: relative dates with -v (date -v-1d), never -d. GNU date: date -d 'yesterday'.
+- BSD stat: stat -f%z for size, stat -f%m for mtime. GNU stat: stat -c%s, stat -c%Y.
+- BSD grep: no -P; use -E. BSD find: no -printf, and always give a path (find .). BSD awk: POSIX only, no gensub or asort.
+Never emit a command that only works on the other variant of a tool.
 
 Context about the current directory, git state, and environment (if provided below) is authoritative — use it to resolve references like "it", "this file", or scoped references like "all worktrees except main". Do not invent file names, branch names, or paths not present in the given context.`

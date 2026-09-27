@@ -22,8 +22,10 @@ smartly --context none show me the largest files here
 
 ### `none`
 
-Only your sentence is sent. Nothing about your machine, your directory or your
-repository.
+Your sentence, plus three facts about the machine the command will run on: the
+OS, your shell, and whether common tools like `sed`, `date` and `stat` are the
+GNU or BSD variants. Nothing about your directory, your repository or your
+history.
 
 Use it when the request is self-contained, or when you are in a directory whose
 file names you would rather not send anywhere.
@@ -52,11 +54,22 @@ or `~/.zsh_history` / `~/.bash_history` depending on your shell.
   every request.
 </Callout>
 
+### Why smartly checks your tools
+
+On a Mac, "BSD" is only a default. With Homebrew's coreutils ahead on your
+`PATH`, `date` and `stat` are GNU while `sed` is still BSD, and the right flags
+differ for each: `date -d` against `date -v`, `stat -c` against `stat -f`, and
+whether a `sed` block needs `;` before its closing `}`. So smartly runs
+`--version` on `sed`, `grep`, `find`, `xargs`, `awk`, `date` and `stat` (a few
+milliseconds, in parallel) and tells the model which variant each one is. Only
+the variant names are sent, e.g. `sed=BSD date=GNU`, not paths or versions.
+
 ## Choosing a level
 
 | | `none` | `light` | `full` |
 | --- | --- | --- | --- |
 | Your sentence | Sent | Sent | Sent |
+| OS, shell, GNU/BSD tool variants | Sent | Sent | Sent |
 | Directory listing (capped) | — | Sent | Sent |
 | Git branch, status, worktrees | — | Sent | Sent |
 | Recent shell history | — | — | Sent |

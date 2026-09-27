@@ -16,6 +16,7 @@ type Info struct {
 	Level string
 	OS    string
 	Shell string
+	Tools string // "Tools: sed=BSD date=GNU ..." line; sent at every level
 	Text  string // labeled block describing cwd/git state; empty for level "none"
 }
 
@@ -25,6 +26,9 @@ func Gather(level, cwd string) (*Info, error) {
 		Level: level,
 		OS:    runtime.GOOS,
 		Shell: detectShell(),
+		// Sent even at level "none", like OS and shell: it describes the
+		// machine the command will run on, not the user's files or history.
+		Tools: gatherTools(runtime.GOOS),
 	}
 
 	switch level {

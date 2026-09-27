@@ -14,6 +14,7 @@ func Build(sentence string, info *appcontext.Info) (system, user string) {
 	var b strings.Builder
 	fmt.Fprintf(&b, "OS: %s\n", info.OS)
 	fmt.Fprintf(&b, "Shell: %s\n", info.Shell)
+	b.WriteString(info.Tools)
 	if info.Text != "" {
 		b.WriteString(info.Text)
 	}

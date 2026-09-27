@@ -275,7 +275,8 @@ tradeoffs in full at [Providers](https://smartlycli.com/docs/providers/).
 
 ### Context levels
 
-- `none`: only your sentence is sent.
+- `none`: your sentence, plus your OS, shell, and whether tools like `sed`,
+  `date` and `stat` are GNU or BSD (a Mac with Homebrew coreutils has both).
 - `light` (default): adds a capped directory listing plus git
   branch/status/worktree info, so "all worktrees except main" resolves.
 - `full`: `light` plus a tail of your recent shell history (`$HISTFILE`, or

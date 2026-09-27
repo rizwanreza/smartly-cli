@@ -80,6 +80,10 @@ Because the wrapper shadows the binary and evals its stdout, **it must only do t
 
 The history log is **strictly append-only**: `request` and `completion` are two JSONL lines joined by `request_id`, never a rewrite. An earlier read-modify-write design was rejected as unsafe under concurrent shells; don't reintroduce it.
 
+### Tool variants (`internal/context/tools.go`)
+
+`OS: darwin` doesn't say which userland runs the command. A Mac with Homebrew's `gnubin` has GNU `date`/`stat` next to BSD `sed`. `gatherTools` probes `--version` on a fixed tool list (in parallel, 500ms cap, ~5ms in practice) and sends a `Tools: sed=BSD date=GNU …` line at **every** context level. The system prompt's portability rules key off that line, not the OS. `classifyVersion` is pure and pinned against real strings: macOS grep says "BSD grep, GNU compatible", so check for BSD before GNU. Every BSD rule in `system.go` was verified against the real `/usr/bin` binaries, so re-verify before adding one.
+
 ### Config (`internal/config`)
 
 `Load()` merges `config.yaml` onto `Defaults()`, so a field absent from the file keeps its Go default rather than zeroing out. Key precedence for `anthropic`/`openai`: the env var named by `api_key_env` → the provider's default env var → the file's `api_key` (`ResolveAPIKey`). `claude-cli`/`codex-cli` have no key-shaped fields by design. `expandHome` exists because YAML is read literally — nothing expands a `~/...` path in `log.path` for you.
