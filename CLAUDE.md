@@ -84,7 +84,7 @@ The history log is **strictly append-only**: `request` and `completion` are two 
 
 ### Website (`site/`, deployed to https://smartlycli.com)
 
-Astro static build; no client framework, analytics or third-party requests, fonts self-hosted — don't add a CDN script or a webfont link.
+Astro static build; no client framework, fonts self-hosted — don't add a CDN script or a webfont link. The one sanctioned third-party request is the Plausible analytics snippet in `Base.astro`'s `<head>` (`is:inline`, so Astro emits it verbatim); don't add other trackers.
 
 - **Nothing about the deploy target is hardcoded.** `BASE_PATH`/`SITE_URL` come from the environment, and `pages.yml` passes `base_path` and `origin` from `actions/configure-pages`, which follow the live Pages config — which is why moving to the apex needed no workflow change. Typing the domain into a component is the bug.
 - `BASE_PATH` feeds three things — Astro's `base`, `withBase()` (`src/lib/url.ts`), and the `rehype-base-urls` plugin for Markdown links — so a new internal link goes through one of them, never a bare `/docs/...` in an `.astro` file. `npm run build:subpath` exercises the prefixed case; run it after touching anything URL-shaped.

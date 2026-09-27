@@ -70,6 +70,13 @@ const ogImage = new URL(withBase('/og.png'), Astro.site).href;
       href={geistRegular}
       crossorigin
     />
+
+    <!-- Privacy-friendly analytics by Plausible -->
+    <script is:inline async src="https://plausible.io/js/pa-YgPF74T5uXJm94SuLaRNu.js"></script>
+    <script is:inline>
+      window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
+      plausible.init()
+    </script>
   </head>
   <body class={bodyClass}>
     <a class="skip-link" href="#main">Skip to content</a>
