@@ -17,8 +17,8 @@ trap 'rm -rf "$work"' EXIT
 printf '%s' "$MACOS_NOTARY_KEY" | base64 --decode > "$work/key.p8"
 ditto -c -k "$binary" "$work/smartly.zip"
 xcrun notarytool submit "$work/smartly.zip" --key "$work/key.p8" --key-id "$MACOS_NOTARY_KEY_ID" --issuer "$MACOS_NOTARY_ISSUER_ID" --wait
-# Both cross-compiled architectures must pass macOS signature validation.
-spctl --assess --type execute --verbose=2 "$binary"
+# codesign above validates both architectures. spctl app assessment is not
+# appropriate for a standalone CLI (it rejects valid code that is not an app).
 # Smoke-test the architecture this runner can execute before publishing.
 case "$(uname -m)" in
   arm64) arch=arm64 ;;
