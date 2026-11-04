@@ -14,6 +14,9 @@ builds:
     goarch:
       - amd64
       - arm64
+    hooks:
+      post:
+        - cmd: bash scripts/sign-macos.sh "{{ .Path }}" "{{ .Os }}"
     ldflags:
       - -s -w -X github.com/rizwanreza/smartly-cli/internal/cli.Version={{.Version}}
 
@@ -26,27 +29,8 @@ archives:
 checksum:
   name_template: "checksums.txt"
 
-# Signs and notarizes the darwin binaries with Apple's notary service,
-# entirely on the Linux CI runner (goreleaser uses quill — no Mac needed).
-# Skipped entirely if the MACOS_* secrets are absent (a fork's CI, say) —
-# the release still succeeds, it just ships binaries Gatekeeper will block.
-#   MACOS_SIGN_P12         base64 of the Developer ID Application .p12
-#   MACOS_SIGN_PASSWORD    the .p12 export password
-#   MACOS_NOTARY_ISSUER_ID App Store Connect API key issuer UUID
-#   MACOS_NOTARY_KEY_ID    App Store Connect API key ID
-#   MACOS_NOTARY_KEY       base64 of the App Store Connect .p8 key
-notarize:
-  macos:
-    - enabled: '{{ if envOrDefault "MACOS_SIGN_P12" "" }}true{{ else }}false{{ end }}'
-      ids: [smartly]
-      sign:
-        certificate: "{{ envOrDefault \"MACOS_SIGN_P12\" \"\" }}"
-        password: "{{ envOrDefault \"MACOS_SIGN_PASSWORD\" \"\" }}"
-      notarize:
-        issuer_id: "{{ envOrDefault \"MACOS_NOTARY_ISSUER_ID\" \"\" }}"
-        key_id: "{{ envOrDefault \"MACOS_NOTARY_KEY_ID\" \"\" }}"
-        key: "{{ envOrDefault \"MACOS_NOTARY_KEY\" \"\" }}"
-        wait: true
+# Sign before archiving so checksums and Homebrew reference the signed bytes.
+# Apple's native tools validate the result before release publication.
 
 changelog:
   sort: asc

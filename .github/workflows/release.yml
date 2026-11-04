@@ -9,7 +9,9 @@ permissions:
 
 jobs:
   goreleaser:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
+    env:
+      MACOS_SIGN_P12: ${{ secrets.MACOS_SIGN_P12 }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -28,6 +30,23 @@ jobs:
           if [ -f "docs/releases/${GITHUB_REF_NAME}.md" ]; then
             echo "flag=--release-notes=docs/releases/${GITHUB_REF_NAME}.md" >> "$GITHUB_OUTPUT"
           fi
+      - name: Import Apple signing identity
+        if: env.MACOS_SIGN_P12 != ''
+        env:
+          MACOS_SIGN_P12: ${{ secrets.MACOS_SIGN_P12 }}
+          MACOS_SIGN_PASSWORD: ${{ secrets.MACOS_SIGN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          KEYCHAIN="$RUNNER_TEMP/smartly-signing.keychain-db"
+          echo "MACOS_SIGN_KEYCHAIN=$KEYCHAIN" >> "$GITHUB_ENV"
+          PASSWORD="$(openssl rand -hex 32)"
+          printf '%s' "$MACOS_SIGN_P12" | base64 --decode > "$RUNNER_TEMP/signing.p12"
+          security create-keychain -p "$PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$PASSWORD" "$KEYCHAIN"
+          security import "$RUNNER_TEMP/signing.p12" -k "$KEYCHAIN" -P "$MACOS_SIGN_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$PASSWORD" "$KEYCHAIN"
+          security list-keychains -d user -s "$KEYCHAIN" login.keychain-db
       - uses: goreleaser/goreleaser-action@v7
         with:
           distribution: goreleaser
@@ -38,10 +57,17 @@ jobs:
           # SSH deploy key with write access to rizwanreza/homebrew-tap;
           # publishes the cask. Absent -> cask generated but not pushed.
           HOMEBREW_TAP_DEPLOY_KEY: ${{ secrets.HOMEBREW_TAP_DEPLOY_KEY }}
-          # Apple signing + notarization (see notarize in .goreleaser.yaml);
+          # Apple signing + notarization (scripts/sign-macos.sh);
           # all absent -> darwin binaries ship unsigned, release still works.
           MACOS_SIGN_P12: ${{ secrets.MACOS_SIGN_P12 }}
           MACOS_SIGN_PASSWORD: ${{ secrets.MACOS_SIGN_PASSWORD }}
           MACOS_NOTARY_ISSUER_ID: ${{ secrets.MACOS_NOTARY_ISSUER_ID }}
           MACOS_NOTARY_KEY_ID: ${{ secrets.MACOS_NOTARY_KEY_ID }}
           MACOS_NOTARY_KEY: ${{ secrets.MACOS_NOTARY_KEY }}
+      - name: Remove signing material
+        if: always()
+        run: |
+          if [ -n "${MACOS_SIGN_KEYCHAIN:-}" ]; then
+            security delete-keychain "$MACOS_SIGN_KEYCHAIN"
+          fi
+          rm -f "$RUNNER_TEMP/signing.p12"
